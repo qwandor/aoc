@@ -1,5 +1,5 @@
 use eyre::{OptionExt, Report};
-use std::io::stdin;
+use std::{collections::HashMap, io::stdin};
 
 fn main() -> Result<(), Report> {
     // Read lists from stdin, parsing and splitting into two lists.
@@ -17,8 +17,10 @@ fn main() -> Result<(), Report> {
     right.sort();
 
     let total_distance = total_distance(&left, &right);
+    let similarity_score = similarity_score(&left, &right);
 
     println!("Total distance: {}", total_distance);
+    println!("Similarity score: {}", similarity_score);
 
     Ok(())
 }
@@ -32,6 +34,17 @@ fn total_distance(left_sorted: &[u64], right_sorted: &[u64]) -> u64 {
         .sum()
 }
 
+/// Calculates the total similarity score.
+fn similarity_score(left: &[u64], right: &[u64]) -> u64 {
+    let mut right_counts: HashMap<u64, u64> = HashMap::new();
+    for right in right {
+        *right_counts.entry(*right).or_default() += 1;
+    }
+    left.into_iter()
+        .map(|left| left * right_counts.get(left).copied().unwrap_or_default())
+        .sum()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -39,5 +52,13 @@ mod tests {
     #[test]
     fn example_distance() {
         assert_eq!(total_distance(&[1, 2, 3, 3, 3, 4], &[3, 3, 3, 4, 5, 9]), 11);
+    }
+
+    #[test]
+    fn example_similarity() {
+        assert_eq!(
+            similarity_score(&[1, 2, 3, 3, 3, 4], &[3, 3, 3, 4, 5, 9]),
+            31
+        );
     }
 }
