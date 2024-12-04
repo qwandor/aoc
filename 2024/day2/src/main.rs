@@ -1,5 +1,9 @@
 use eyre::Report;
-use std::{cmp::Ordering, io::stdin, ops::RangeInclusive};
+use std::{
+    cmp::Ordering,
+    io::stdin,
+    ops::{Deref, RangeInclusive},
+};
 
 const SAFE_CHANGE_RANGE: RangeInclusive<u64> = 1..=3;
 
@@ -14,14 +18,17 @@ fn main() -> Result<(), Report> {
         })
         .collect::<Result<_, Report>>()?;
 
-    let safe_count = count_safe(&reports);
+    let safe_count = count(&reports, safe);
     println!("{} reports are safe.", safe_count);
 
     Ok(())
 }
 
-fn count_safe(reports: &[Vec<u64>]) -> usize {
-    reports.into_iter().filter(|report| safe(report)).count()
+fn count<'a, E: Deref<Target = D> + 'a, D: ?Sized>(
+    elements: impl IntoIterator<Item = &'a E>,
+    f: impl Fn(&D) -> bool,
+) -> usize {
+    elements.into_iter().filter(|report| f(report)).count()
 }
 
 /// Returns whether the levels are either all increasing or all decreasing, and adjacent levels
