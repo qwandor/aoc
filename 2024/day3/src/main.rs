@@ -6,44 +6,72 @@ fn main() -> Result<(), Report> {
     let mut input = String::new();
     stdin().read_to_string(&mut input)?;
 
-    let result = calculate(&input);
+    let instructions = parse(&input);
+    let result = run(&instructions);
     println!("Result: {}", result);
+    let result = run_without_disable(&instructions);
+    println!("Result ignoring do/don't: {}", result);
 
     Ok(())
 }
 
-fn calculate(input: &str) -> u64 {
-    run(&parse(input))
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum Instruction {
+    Do,
+    Dont,
     Mul(u64, u64),
 }
 
-fn parse(input: &str) -> Vec<Instruction> {
-    let mul_regex = Regex::new(r"mul\((\d{1,3}),(\d{1,3})\)").unwrap();
-    mul_regex
-        .captures_iter(&input)
-        .map(|capture| {
-            Instruction::Mul(
-                capture.get(1).unwrap().as_str().parse::<u64>().unwrap(),
-                capture.get(2).unwrap().as_str().parse::<u64>().unwrap(),
-            )
-        })
-        .collect()
+fn parse(mut input: &str) -> Vec<Instruction> {
+    let do_regex = Regex::new(r"^do\(\)").unwrap();
+    let dont_regex = Regex::new(r"^don't\(\)").unwrap();
+    let mul_regex = Regex::new(r"^mul\((\d{1,3}),(\d{1,3})\)").unwrap();
+    let mut instructions = Vec::new();
+    while !input.is_empty() {
+        if let Some(captures) = do_regex.captures(&input) {
+            instructions.push(Instruction::Do);
+            input = &input[captures.len()..];
+        } else if let Some(captures) = dont_regex.captures(&input) {
+            instructions.push(Instruction::Dont);
+            input = &input[captures.len()..];
+        } else if let Some(captures) = mul_regex.captures(&input) {
+            instructions.push(Instruction::Mul(
+                captures.get(1).unwrap().as_str().parse::<u64>().unwrap(),
+                captures.get(2).unwrap().as_str().parse::<u64>().unwrap(),
+            ));
+            input = &input[captures.len()..];
+        } else {
+            input = &input[1..];
+        }
+    }
+    instructions
 }
 
-fn run(instructions: &[Instruction]) -> u64 {
+fn run<'a>(instructions: impl IntoIterator<Item = &'a Instruction>) -> u64 {
+    let mut enabled = true;
     let mut sum = 0;
     for instruction in instructions {
         match instruction {
+            Instruction::Do => {
+                enabled = true;
+            }
+            Instruction::Dont => {
+                enabled = false;
+            }
             Instruction::Mul(a, b) => {
-                sum += a * b;
+                if enabled {
+                    sum += a * b;
+                }
             }
         }
     }
     sum
+}
+
+fn run_without_disable(instructions: &[Instruction]) -> u64 {
+    run(instructions
+        .iter()
+        .filter(|instruction| matches!(instruction, Instruction::Mul(_, _))))
 }
 
 #[cfg(test)]
@@ -52,9 +80,17 @@ mod tests {
 
     #[test]
     fn calculate_example() {
-        assert_eq!(
-            calculate("xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"),
-            161
-        );
+        let instructions =
+            parse("xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))");
+        assert_eq!(run(&instructions), 161);
+        assert_eq!(run_without_disable(&instructions), 161);
+    }
+
+    #[test]
+    fn calculate_example2() {
+        let instructions =
+            parse("xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))");
+        assert_eq!(run(&instructions), 48);
+        assert_eq!(run_without_disable(&instructions), 161);
     }
 }
