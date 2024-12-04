@@ -19,7 +19,12 @@ fn main() -> Result<(), Report> {
         .collect::<Result<_, Report>>()?;
 
     let safe_count = count(&reports, safe);
+    let safe_with_dampener_count = count(&reports, safe_with_dampener);
     println!("{} reports are safe.", safe_count);
+    println!(
+        "{} reports are safe with the problem dampener.",
+        safe_with_dampener_count
+    );
 
     Ok(())
 }
@@ -45,6 +50,15 @@ fn safe(levels: &[u64]) -> bool {
         })
 }
 
+/// Returns whether the levels are safe if one is removed.
+fn safe_with_dampener(levels: &[u64]) -> bool {
+    (0..levels.len()).into_iter().any(|level_to_remove| {
+        let mut levels = levels.to_vec();
+        levels.remove(level_to_remove);
+        safe(&levels)
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -68,5 +82,15 @@ mod tests {
     fn safety_single() {
         assert!(safe(&[0]));
         assert!(safe(&[1]));
+    }
+
+    #[test]
+    fn safety_dampener_example() {
+        assert!(safe_with_dampener(&[7, 6, 4, 2, 1]));
+        assert!(!safe_with_dampener(&[1, 2, 7, 8, 9]));
+        assert!(!safe_with_dampener(&[9, 7, 6, 2, 1]));
+        assert!(safe_with_dampener(&[1, 3, 2, 4, 5]));
+        assert!(safe_with_dampener(&[8, 6, 4, 4, 1]));
+        assert!(safe_with_dampener(&[1, 3, 6, 7, 9]));
     }
 }
