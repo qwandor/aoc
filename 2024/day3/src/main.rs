@@ -1,5 +1,5 @@
 use eyre::Report;
-use regex::Regex;
+use regex::{Captures, Regex};
 use std::io::{stdin, Read};
 
 fn main() -> Result<(), Report> {
@@ -23,26 +23,30 @@ enum Instruction {
 }
 
 fn parse(mut input: &str) -> Vec<Instruction> {
-    let do_regex = Regex::new(r"^do\(\)").unwrap();
-    let dont_regex = Regex::new(r"^don't\(\)").unwrap();
-    let mul_regex = Regex::new(r"^mul\((\d{1,3}),(\d{1,3})\)").unwrap();
+    let patterns: &[(_, fn(&Captures) -> _)] = &[
+        (Regex::new(r"^do\(\)").unwrap(), |_| Instruction::Do),
+        (Regex::new(r"^don't\(\)").unwrap(), |_| Instruction::Dont),
+        (
+            Regex::new(r"^mul\((\d{1,3}),(\d{1,3})\)").unwrap(),
+            |captures| {
+                Instruction::Mul(
+                    captures.get(1).unwrap().as_str().parse::<u64>().unwrap(),
+                    captures.get(2).unwrap().as_str().parse::<u64>().unwrap(),
+                )
+            },
+        ),
+    ];
+
     let mut instructions = Vec::new();
-    while !input.is_empty() {
-        if let Some(captures) = do_regex.captures(&input) {
-            instructions.push(Instruction::Do);
-            input = &input[captures.len()..];
-        } else if let Some(captures) = dont_regex.captures(&input) {
-            instructions.push(Instruction::Dont);
-            input = &input[captures.len()..];
-        } else if let Some(captures) = mul_regex.captures(&input) {
-            instructions.push(Instruction::Mul(
-                captures.get(1).unwrap().as_str().parse::<u64>().unwrap(),
-                captures.get(2).unwrap().as_str().parse::<u64>().unwrap(),
-            ));
-            input = &input[captures.len()..];
-        } else {
-            input = &input[1..];
+    'parse: while !input.is_empty() {
+        for (regex, f) in patterns {
+            if let Some(captures) = regex.captures(&input) {
+                instructions.push(f(&captures));
+                input = &input[captures.len()..];
+                continue 'parse;
+            }
         }
+        input = &input[1..];
     }
     instructions
 }
