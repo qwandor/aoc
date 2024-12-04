@@ -11,8 +11,8 @@ fn main() -> Result<(), Report> {
     let reports: Vec<Vec<u64>> = stdin()
         .lines()
         .map(|line| {
-            let line = line?;
-            line.split_whitespace()
+            line?
+                .split_whitespace()
                 .map(|level| Ok(level.parse()?))
                 .collect()
         })
