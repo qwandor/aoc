@@ -67,6 +67,10 @@ fn count_1d_matches<T: PartialEq>(slice: &[T], words: &[&[T]]) -> usize {
         .sum()
 }
 
+fn charvec(s: &str) -> Vec<char> {
+    s.chars().collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -76,57 +80,52 @@ mod tests {
         // abc
         // ABC
         let expected: Vec<Vec<char>> = vec![
-            "A".chars().collect(),
-            "a".chars().collect(),
-            "aB".chars().collect(),
-            "bA".chars().collect(),
-            "bC".chars().collect(),
-            "cB".chars().collect(),
-            "c".chars().collect(),
-            "C".chars().collect(),
+            charvec("A"),
+            charvec("a"),
+            charvec("aB"),
+            charvec("bA"),
+            charvec("bC"),
+            charvec("cB"),
+            charvec("c"),
+            charvec("C"),
         ];
         assert_eq!(
-            diagonals(&["abc".chars().collect(), "ABC".chars().collect()]).collect::<Vec<_>>(),
+            diagonals(&[charvec("abc"), charvec("ABC")]).collect::<Vec<_>>(),
             expected
         );
         // abcd
         // ABCD
         let expected: Vec<Vec<char>> = vec![
-            "A".chars().collect(),
-            "a".chars().collect(),
-            "aB".chars().collect(),
-            "bA".chars().collect(),
-            "bC".chars().collect(),
-            "cB".chars().collect(),
-            "cD".chars().collect(),
-            "dC".chars().collect(),
-            "d".chars().collect(),
-            "D".chars().collect(),
+            charvec("A"),
+            charvec("a"),
+            charvec("aB"),
+            charvec("bA"),
+            charvec("bC"),
+            charvec("cB"),
+            charvec("cD"),
+            charvec("dC"),
+            charvec("d"),
+            charvec("D"),
         ];
         assert_eq!(
-            diagonals(&["abcd".chars().collect(), "ABCD".chars().collect()]).collect::<Vec<_>>(),
+            diagonals(&[charvec("abcd"), charvec("ABCD")]).collect::<Vec<_>>(),
             expected
         );
         // aA
         // bB
         // cC
         let expected: Vec<Vec<char>> = vec![
-            "c".chars().collect(),
-            "a".chars().collect(),
-            "bC".chars().collect(),
-            "Ab".chars().collect(),
-            "aB".chars().collect(),
-            "Bc".chars().collect(),
-            "A".chars().collect(),
-            "C".chars().collect(),
+            charvec("c"),
+            charvec("a"),
+            charvec("bC"),
+            charvec("Ab"),
+            charvec("aB"),
+            charvec("Bc"),
+            charvec("A"),
+            charvec("C"),
         ];
         assert_eq!(
-            diagonals(&[
-                "aA".chars().collect(),
-                "bB".chars().collect(),
-                "cC".chars().collect()
-            ])
-            .collect::<Vec<_>>(),
+            diagonals(&[charvec("aA"), charvec("bB"), charvec("cC")]).collect::<Vec<_>>(),
             expected
         );
     }
@@ -141,11 +140,11 @@ mod tests {
         assert_eq!(
             count_matches(
                 &[
-                    "..X...".chars().collect(),
-                    ".SAMX.".chars().collect(),
-                    ".A..A.".chars().collect(),
-                    "XMAS.S".chars().collect(),
-                    ".X....".chars().collect(),
+                    charvec("..X..."),
+                    charvec(".SAMX."),
+                    charvec(".A..A."),
+                    charvec("XMAS.S"),
+                    charvec(".X...."),
                 ],
                 "XMAS"
             ),
@@ -158,11 +157,11 @@ mod tests {
         assert_eq!(
             count_matches(
                 &[
-                    "MMMSXXMASM".chars().collect(),
-                    "MSAMXMSMSA".chars().collect(),
-                    "AMXSXMAAMM".chars().collect(),
-                    "MSAMASMSMX".chars().collect(),
-                    "XMASAMXAMM".chars().collect(),
+                    charvec("MMMSXXMASM"),
+                    charvec("MSAMXMSMSA"),
+                    charvec("AMXSXMAAMM"),
+                    charvec("MSAMASMSMX"),
+                    charvec("XMASAMXAMM"),
                 ],
                 "XMAS"
             ),
@@ -171,16 +170,16 @@ mod tests {
         assert_eq!(
             count_matches(
                 &[
-                    "MMMSXXMASM".chars().collect(),
-                    "MSAMXMSMSA".chars().collect(),
-                    "AMXSXMAAMM".chars().collect(),
-                    "MSAMASMSMX".chars().collect(),
-                    "XMASAMXAMM".chars().collect(),
-                    "XXAMMXXAMA".chars().collect(),
-                    "SMSMSASXSS".chars().collect(),
-                    "SAXAMASAAA".chars().collect(),
-                    "MAMMMXMMMM".chars().collect(),
-                    "MXMXAXMASX".chars().collect(),
+                    charvec("MMMSXXMASM"),
+                    charvec("MSAMXMSMSA"),
+                    charvec("AMXSXMAAMM"),
+                    charvec("MSAMASMSMX"),
+                    charvec("XMASAMXAMM"),
+                    charvec("XXAMMXXAMA"),
+                    charvec("SMSMSASXSS"),
+                    charvec("SAXAMASAAA"),
+                    charvec("MAMMMXMMMM"),
+                    charvec("MXMXAXMASX"),
                 ],
                 "XMAS"
             ),
