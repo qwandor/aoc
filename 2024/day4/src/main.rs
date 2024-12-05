@@ -25,9 +25,7 @@ fn count_matches(grid: &[Vec<char>], word: &str) -> usize {
         .chain(columns(grid).map(|column| count_1d_matches(&column, &[&word, &word_reversed])))
         // Check for diagonal matches.
         .chain(
-            diagonals(grid)
-                .into_iter()
-                .map(|diagonal| count_1d_matches(&diagonal, &[&word, &word_reversed])),
+            diagonals(grid).map(|diagonal| count_1d_matches(&diagonal, &[&word, &word_reversed])),
         )
         .sum::<usize>()
 }
@@ -39,26 +37,22 @@ fn columns<T: Copy>(grid: &[Vec<T>]) -> impl Iterator<Item = Vec<T>> + '_ {
 }
 
 /// Returns all diagonals of the given grid.
-fn diagonals<T: Copy>(grid: &[Vec<T>]) -> Vec<Vec<T>> {
-    if grid.is_empty() || grid[0].is_empty() {
-        return Vec::new();
-    }
+fn diagonals<T: Copy>(grid: &[Vec<T>]) -> impl Iterator<Item = Vec<T>> + '_ {
     let height = grid.len();
-    let width = grid[0].len();
+    let width = grid.first().map(Vec::len).unwrap_or_default();
     (1..width + height)
-        .map(|i| {
+        .map(move |i| {
             // Down to the right.
             (0..height)
                 .filter_map(|j| grid[j].get((i + j).checked_sub(height)?).copied())
                 .collect::<Vec<_>>()
         })
-        .chain((0..width + height - 1).map(|i| {
+        .chain((1..width + height).map(move |i| {
             // Down to the left.
             (0..height)
-                .filter_map(|j| grid[j].get((i).checked_sub(j)?).copied())
+                .filter_map(|j| grid[j].get((i).checked_sub(j + 1)?).copied())
                 .collect::<Vec<_>>()
         }))
-        .collect()
 }
 
 /// Counts the number of times the given words occur in the given slice, including overlaps.
@@ -95,7 +89,7 @@ mod tests {
             "C".chars().collect(),
         ];
         assert_eq!(
-            diagonals(&["abc".chars().collect(), "ABC".chars().collect()]),
+            diagonals(&["abc".chars().collect(), "ABC".chars().collect()]).collect::<Vec<_>>(),
             expected
         );
         // abcd
@@ -115,7 +109,7 @@ mod tests {
             "D".chars().collect(),
         ];
         assert_eq!(
-            diagonals(&["abcd".chars().collect(), "ABCD".chars().collect()]),
+            diagonals(&["abcd".chars().collect(), "ABCD".chars().collect()]).collect::<Vec<_>>(),
             expected
         );
         // aA
@@ -138,7 +132,8 @@ mod tests {
                 "aA".chars().collect(),
                 "bB".chars().collect(),
                 "cC".chars().collect()
-            ]),
+            ])
+            .collect::<Vec<_>>(),
             expected
         );
     }
