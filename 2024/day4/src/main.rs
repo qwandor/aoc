@@ -43,7 +43,7 @@ fn count_matches(grid: &[Vec<char>], word: &str) -> usize {
 }
 
 /// Returns all diagonals of the given grid.
-fn diagonals(grid: &[Vec<char>]) -> Vec<Vec<char>> {
+fn diagonals<T: Copy>(grid: &[Vec<T>]) -> Vec<Vec<T>> {
     if grid.is_empty() || grid[0].is_empty() {
         return Vec::new();
     }
@@ -66,7 +66,7 @@ fn diagonals(grid: &[Vec<char>]) -> Vec<Vec<char>> {
 }
 
 /// Counts the number of times the given word occurs in the given slice, including overlaps.
-fn count_1d_matches(slice: &[char], word: &[char]) -> usize {
+fn count_1d_matches<T: PartialEq>(slice: &[T], word: &[T]) -> usize {
     slice
         .windows(word.len())
         .filter(|window| *window == word)
