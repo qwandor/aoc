@@ -6,7 +6,7 @@ fn main() -> Result<(), Report> {
         .lines()
         .map(|line| Ok(line?.chars().collect()))
         .collect::<Result<_, Report>>()?;
-    let matches = count_matches(&grid, "XMAS");
+    let matches = count_matches(&grid, &charvec("XMAS"));
     println!("{} matches", matches);
 
     Ok(())
@@ -14,19 +14,16 @@ fn main() -> Result<(), Report> {
 
 /// Returns the number of times the word can be found in the grid, either horizontally, vertically
 /// or diagonally in either direction.
-fn count_matches(grid: &[Vec<char>], word: &str) -> usize {
-    let word = word.chars().collect::<Vec<_>>();
+fn count_matches<T: Copy + PartialEq>(grid: &[Vec<T>], word: &[T]) -> usize {
     let word_reversed = word.iter().rev().copied().collect::<Vec<_>>();
 
     // Check for horizonal matches.
     grid.iter()
-        .map(|row| count_1d_matches(row, &[&word, &word_reversed]))
+        .map(|row| count_1d_matches(row, &[word, &word_reversed]))
         // Check for vertical matches.
-        .chain(columns(grid).map(|column| count_1d_matches(&column, &[&word, &word_reversed])))
+        .chain(columns(grid).map(|column| count_1d_matches(&column, &[word, &word_reversed])))
         // Check for diagonal matches.
-        .chain(
-            diagonals(grid).map(|diagonal| count_1d_matches(&diagonal, &[&word, &word_reversed])),
-        )
+        .chain(diagonals(grid).map(|diagonal| count_1d_matches(&diagonal, &[word, &word_reversed])))
         .sum::<usize>()
 }
 
@@ -132,7 +129,7 @@ mod tests {
 
     #[test]
     fn count_empty() {
-        assert_eq!(count_matches(&[], "XMAS"), 0);
+        assert_eq!(count_matches(&[], &charvec("XMAS")), 0);
     }
 
     #[test]
@@ -146,7 +143,7 @@ mod tests {
                     charvec("XMAS.S"),
                     charvec(".X...."),
                 ],
-                "XMAS"
+                &charvec("XMAS")
             ),
             4
         );
@@ -163,7 +160,7 @@ mod tests {
                     charvec("MSAMASMSMX"),
                     charvec("XMASAMXAMM"),
                 ],
-                "XMAS"
+                &charvec("XMAS")
             ),
             6
         );
@@ -181,7 +178,7 @@ mod tests {
                     charvec("MAMMMXMMMM"),
                     charvec("MXMXAXMASX"),
                 ],
-                "XMAS"
+                &charvec("XMAS")
             ),
             18
         );
