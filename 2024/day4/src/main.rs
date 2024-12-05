@@ -22,24 +22,20 @@ fn count_matches(grid: &[Vec<char>], word: &str) -> usize {
 
     let word = word.chars().collect::<Vec<_>>();
     let word_reversed = word.clone().into_iter().rev().collect::<Vec<_>>();
-    let mut match_count = 0;
 
     // Check for horizonal matches.
-    for row in grid {
-        match_count += count_1d_matches(row, &word) + count_1d_matches(row, &word_reversed);
-    }
-    // Check for vertical matches.
-    for x in 0..width {
-        let column = grid.iter().map(|row| row[x]).collect::<Vec<_>>();
-        match_count += count_1d_matches(&column, &word) + count_1d_matches(&column, &word_reversed);
-    }
-    // Check for diagonal matches.
-    for diagonal in diagonals(grid) {
-        match_count +=
-            count_1d_matches(&diagonal, &word) + count_1d_matches(&diagonal, &word_reversed);
-    }
-
-    match_count
+    grid.into_iter()
+        .map(|row| count_1d_matches(row, &word) + count_1d_matches(row, &word_reversed))
+        // Check for vertical matches.
+        .chain((0..width).map(|x| {
+            let column = grid.iter().map(|row| row[x]).collect::<Vec<_>>();
+            count_1d_matches(&column, &word) + count_1d_matches(&column, &word_reversed)
+        }))
+        // Check for diagonal matches.
+        .chain(diagonals(grid).into_iter().map(|diagonal| {
+            count_1d_matches(&diagonal, &word) + count_1d_matches(&diagonal, &word_reversed)
+        }))
+        .sum::<usize>()
 }
 
 /// Returns all diagonals of the given grid.
