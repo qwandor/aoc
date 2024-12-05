@@ -25,16 +25,18 @@ fn count_matches(grid: &[Vec<char>], word: &str) -> usize {
 
     // Check for horizonal matches.
     grid.into_iter()
-        .map(|row| count_1d_matches(row, &word) + count_1d_matches(row, &word_reversed))
+        .map(|row| count_1d_matches(row, &[&word, &word_reversed]))
         // Check for vertical matches.
         .chain((0..width).map(|x| {
             let column = grid.iter().map(|row| row[x]).collect::<Vec<_>>();
-            count_1d_matches(&column, &word) + count_1d_matches(&column, &word_reversed)
+            count_1d_matches(&column, &[&word, &word_reversed])
         }))
         // Check for diagonal matches.
-        .chain(diagonals(grid).into_iter().map(|diagonal| {
-            count_1d_matches(&diagonal, &word) + count_1d_matches(&diagonal, &word_reversed)
-        }))
+        .chain(
+            diagonals(grid)
+                .into_iter()
+                .map(|diagonal| count_1d_matches(&diagonal, &[&word, &word_reversed])),
+        )
         .sum::<usize>()
 }
 
@@ -61,12 +63,17 @@ fn diagonals<T: Copy>(grid: &[Vec<T>]) -> Vec<Vec<T>> {
         .collect()
 }
 
-/// Counts the number of times the given word occurs in the given slice, including overlaps.
-fn count_1d_matches<T: PartialEq>(slice: &[T], word: &[T]) -> usize {
-    slice
-        .windows(word.len())
-        .filter(|window| *window == word)
-        .count()
+/// Counts the number of times the given words occur in the given slice, including overlaps.
+fn count_1d_matches<T: PartialEq>(slice: &[T], words: &[&[T]]) -> usize {
+    words
+        .into_iter()
+        .map(|word| {
+            slice
+                .windows(word.len())
+                .filter(|window| window == word)
+                .count()
+        })
+        .sum()
 }
 
 #[cfg(test)]
