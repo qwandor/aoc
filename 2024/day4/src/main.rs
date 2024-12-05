@@ -40,19 +40,18 @@ fn columns<T: Copy>(grid: &[Vec<T>]) -> impl Iterator<Item = Vec<T>> + '_ {
 fn diagonals<T: Copy>(grid: &[Vec<T>]) -> impl Iterator<Item = Vec<T>> + '_ {
     let height = grid.len();
     let width = grid.first().map(Vec::len).unwrap_or_default();
-    (1..width + height)
-        .map(move |i| {
+    (1..width + height).flat_map(move |i| {
+        [
             // Down to the right.
             (0..height)
                 .filter_map(|j| grid[j].get((i + j).checked_sub(height)?).copied())
-                .collect::<Vec<_>>()
-        })
-        .chain((1..width + height).map(move |i| {
+                .collect::<Vec<_>>(),
             // Down to the left.
             (0..height)
                 .filter_map(|j| grid[j].get((i).checked_sub(j + 1)?).copied())
-                .collect::<Vec<_>>()
-        }))
+                .collect::<Vec<_>>(),
+        ]
+    })
 }
 
 /// Counts the number of times the given words occur in the given slice, including overlaps.
@@ -77,15 +76,13 @@ mod tests {
         // abc
         // ABC
         let expected: Vec<Vec<char>> = vec![
-            // Down to the right.
             "A".chars().collect(),
-            "aB".chars().collect(),
-            "bC".chars().collect(),
-            "c".chars().collect(),
-            // Down to the left.
             "a".chars().collect(),
+            "aB".chars().collect(),
             "bA".chars().collect(),
+            "bC".chars().collect(),
             "cB".chars().collect(),
+            "c".chars().collect(),
             "C".chars().collect(),
         ];
         assert_eq!(
@@ -95,17 +92,15 @@ mod tests {
         // abcd
         // ABCD
         let expected: Vec<Vec<char>> = vec![
-            // Down to the right.
             "A".chars().collect(),
-            "aB".chars().collect(),
-            "bC".chars().collect(),
-            "cD".chars().collect(),
-            "d".chars().collect(),
-            // Down to the left.
             "a".chars().collect(),
+            "aB".chars().collect(),
             "bA".chars().collect(),
+            "bC".chars().collect(),
             "cB".chars().collect(),
+            "cD".chars().collect(),
             "dC".chars().collect(),
+            "d".chars().collect(),
             "D".chars().collect(),
         ];
         assert_eq!(
@@ -116,15 +111,13 @@ mod tests {
         // bB
         // cC
         let expected: Vec<Vec<char>> = vec![
-            // Down to the right.
             "c".chars().collect(),
-            "bC".chars().collect(),
-            "aB".chars().collect(),
-            "A".chars().collect(),
-            // Down to the left.
             "a".chars().collect(),
+            "bC".chars().collect(),
             "Ab".chars().collect(),
+            "aB".chars().collect(),
             "Bc".chars().collect(),
+            "A".chars().collect(),
             "C".chars().collect(),
         ];
         assert_eq!(
