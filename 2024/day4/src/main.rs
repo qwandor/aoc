@@ -15,11 +15,6 @@ fn main() -> Result<(), Report> {
 /// Returns the number of times the word can be found in the grid, either horizontally, vertically
 /// or diagonally in either direction.
 fn count_matches(grid: &[Vec<char>], word: &str) -> usize {
-    if grid.is_empty() || grid[0].is_empty() {
-        return 0;
-    }
-    let width = grid[0].len();
-
     let word = word.chars().collect::<Vec<_>>();
     let word_reversed = word.iter().rev().copied().collect::<Vec<_>>();
 
@@ -27,10 +22,7 @@ fn count_matches(grid: &[Vec<char>], word: &str) -> usize {
     grid.iter()
         .map(|row| count_1d_matches(row, &[&word, &word_reversed]))
         // Check for vertical matches.
-        .chain((0..width).map(|x| {
-            let column = grid.iter().map(|row| row[x]).collect::<Vec<_>>();
-            count_1d_matches(&column, &[&word, &word_reversed])
-        }))
+        .chain(columns(grid).map(|column| count_1d_matches(&column, &[&word, &word_reversed])))
         // Check for diagonal matches.
         .chain(
             diagonals(grid)
@@ -38,6 +30,12 @@ fn count_matches(grid: &[Vec<char>], word: &str) -> usize {
                 .map(|diagonal| count_1d_matches(&diagonal, &[&word, &word_reversed])),
         )
         .sum::<usize>()
+}
+
+/// Returns all columns of the given grid.
+fn columns<T: Copy>(grid: &[Vec<T>]) -> impl Iterator<Item = Vec<T>> + '_ {
+    let width = grid.first().map(Vec::len).unwrap_or_default();
+    (0..width).map(|x| grid.iter().map(|row| row[x]).collect::<Vec<_>>())
 }
 
 /// Returns all diagonals of the given grid.
@@ -143,6 +141,11 @@ mod tests {
             ]),
             expected
         );
+    }
+
+    #[test]
+    fn count_empty() {
+        assert_eq!(count_matches(&[], "XMAS"), 0);
     }
 
     #[test]
