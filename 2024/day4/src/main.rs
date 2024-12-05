@@ -14,7 +14,7 @@ fn main() -> Result<(), Report> {
 
 /// Returns the number of times the word can be found in the grid, either horizontally, vertically
 /// or diagonally in either direction.
-fn count_matches(grid: &[Vec<char>], word: &str) -> u64 {
+fn count_matches(grid: &[Vec<char>], word: &str) -> usize {
     if grid.is_empty() || grid[0].is_empty() {
         return 0;
     }
@@ -66,11 +66,11 @@ fn diagonals(grid: &[Vec<char>]) -> Vec<Vec<char>> {
 }
 
 /// Counts the number of times the given word occurs in the given slice, including overlaps.
-fn count_1d_matches(slice: &[char], word: &[char]) -> u64 {
+fn count_1d_matches(slice: &[char], word: &[char]) -> usize {
     slice
         .windows(word.len())
-        .map(|window| u64::from(window == word))
-        .sum()
+        .filter(|window| *window == word)
+        .count()
 }
 
 #[cfg(test)]
