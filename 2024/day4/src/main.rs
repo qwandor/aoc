@@ -24,7 +24,7 @@ fn count_matches(grid: &[Vec<char>], word: &str) -> usize {
     let word_reversed = word.iter().rev().copied().collect::<Vec<_>>();
 
     // Check for horizonal matches.
-    grid.into_iter()
+    grid.iter()
         .map(|row| count_1d_matches(row, &[&word, &word_reversed]))
         // Check for vertical matches.
         .chain((0..width).map(|x| {
@@ -66,7 +66,7 @@ fn diagonals<T: Copy>(grid: &[Vec<T>]) -> Vec<Vec<T>> {
 /// Counts the number of times the given words occur in the given slice, including overlaps.
 fn count_1d_matches<T: PartialEq>(slice: &[T], words: &[&[T]]) -> usize {
     words
-        .into_iter()
+        .iter()
         .map(|word| {
             slice
                 .windows(word.len())
