@@ -21,7 +21,7 @@ fn count_matches(grid: &[Vec<char>], word: &str) -> usize {
     let width = grid[0].len();
 
     let word = word.chars().collect::<Vec<_>>();
-    let word_reversed = word.clone().into_iter().rev().collect::<Vec<_>>();
+    let word_reversed = word.iter().rev().copied().collect::<Vec<_>>();
 
     // Check for horizonal matches.
     grid.into_iter()
