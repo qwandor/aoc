@@ -67,6 +67,7 @@ impl<T: Copy> Grid<T> {
     }
 
     /// Returns a copy of the grid flipped vertically.
+    #[allow(unused)]
     pub fn flip_vertical(&self) -> Self {
         let elements = self.rows().rev().flatten().copied().collect();
         Self {
@@ -125,6 +126,7 @@ impl<T: Debug> Debug for Grid<T> {
 
 impl<T: Default> Grid<T> {
     /// Creates a new empty grid of the given size.
+    #[allow(unused)]
     pub fn new(width: usize, height: usize) -> Self {
         Self {
             width,
