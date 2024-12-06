@@ -1,15 +1,9 @@
-mod grid;
-
 use eyre::Report;
-use grid::Grid;
 use std::io::stdin;
+use utils::{charvec, grid::Grid, parse_chargrid};
 
 fn main() -> Result<(), Report> {
-    let grid = stdin()
-        .lines()
-        .map(|line| Ok(line?.chars().collect()))
-        .collect::<Result<Vec<Vec<_>>, Report>>()?
-        .try_into()?;
+    let grid = parse_chargrid(stdin().lock())?;
 
     let matches = count_matches(&grid, &charvec("XMAS"));
     println!("{} XMAS matches", matches);
@@ -98,10 +92,6 @@ fn subgrid_matches<T: PartialEq>(
                         == pattern_element.as_ref()
             })
     })
-}
-
-fn charvec(s: &str) -> Vec<char> {
-    s.chars().collect()
 }
 
 #[cfg(test)]
