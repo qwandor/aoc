@@ -33,7 +33,7 @@ impl<T> Grid<T> {
     }
 
     /// Returns an iterator over rows of the grid.
-    pub fn rows(&self) -> impl Iterator<Item = &[T]> {
+    pub fn rows(&self) -> impl DoubleEndedIterator<Item = &[T]> {
         if self.elements.is_empty() {
             // `chunks_exact` will panic if we pass 0, but it doesn't actually matter what we pass
             // as `elements` is empty anyway.
@@ -64,6 +64,47 @@ impl<T: Copy> Grid<T> {
                     .collect::<Vec<_>>(),
             ]
         })
+    }
+
+    /// Returns a copy of the grid flipped vertically.
+    pub fn flip_vertical(&self) -> Self {
+        let elements = self.rows().rev().flatten().copied().collect();
+        Self {
+            width: self.width,
+            height: self.height,
+            elements,
+        }
+    }
+
+    /// Returns a copy of the grid flipped horizontally.
+    pub fn flip_horizonal(&self) -> Self {
+        let elements = self
+            .rows()
+            .map(|row| row.into_iter().rev())
+            .flatten()
+            .copied()
+            .collect();
+        Self {
+            width: self.width,
+            height: self.height,
+            elements,
+        }
+    }
+
+    /// Returns a copy of the grid rotated 90° clockwise.
+    pub fn rotate_clockwise(&self) -> Self {
+        let elements = (0..self.width)
+            .flat_map(|new_y| {
+                (0..self.height)
+                    .map(move |new_x| self.get(new_y, self.height() - new_x - 1).unwrap())
+            })
+            .copied()
+            .collect();
+        Self {
+            width: self.height,
+            height: self.width,
+            elements,
+        }
     }
 }
 
@@ -230,5 +271,14 @@ mod tests {
                 .collect::<Vec<_>>(),
             expected
         );
+    }
+
+    #[test]
+    fn rotate() {
+        //  1  2  3
+        // 10 20 30
+        let grid = Grid::try_from(vec![vec![1, 2, 3], vec![10, 20, 30]]).unwrap();
+        let expected = Grid::try_from(vec![vec![10, 1], vec![20, 2], vec![30, 3]]).unwrap();
+        assert_eq!(grid.rotate_clockwise(), expected);
     }
 }

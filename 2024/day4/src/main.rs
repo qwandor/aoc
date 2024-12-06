@@ -10,8 +10,22 @@ fn main() -> Result<(), Report> {
         .map(|line| Ok(line?.chars().collect()))
         .collect::<Result<Vec<Vec<_>>, Report>>()?
         .try_into()?;
+
     let matches = count_matches(&grid, &charvec("XMAS"));
-    println!("{} matches", matches);
+    println!("{} XMAS matches", matches);
+
+    let x_mas = vec![
+        vec![Some('M'), None, Some('S')],
+        vec![None, Some('A'), None],
+        vec![Some('M'), None, Some('S')],
+    ]
+    .try_into()
+    .unwrap();
+    let x_mas_matches = count_2d_matches(&grid, &x_mas)
+        + count_2d_matches(&grid, &x_mas.flip_horizonal())
+        + count_2d_matches(&grid, &x_mas.rotate_clockwise())
+        + count_2d_matches(&grid, &x_mas.flip_horizonal().rotate_clockwise());
+    println!("{} X-MAS matches", x_mas_matches);
 
     Ok(())
 }
@@ -48,6 +62,38 @@ fn count_1d_matches<T: PartialEq>(slice: &[T], words: &[&[T]]) -> usize {
                 .count()
         })
         .sum()
+}
+
+fn count_2d_matches<T: PartialEq>(grid: &Grid<T>, pattern: &Grid<Option<T>>) -> usize {
+    if pattern.width() > grid.width() || pattern.height() > grid.height() {
+        return 0;
+    }
+
+    (0..=grid.height() - pattern.height())
+        .map(|start_y| {
+            (0..=grid.width() - pattern.width())
+                .filter(|start_x| subgrid_matches(grid, *start_x, start_y, pattern))
+                .count()
+        })
+        .sum()
+}
+
+fn subgrid_matches<T: PartialEq>(
+    grid: &Grid<T>,
+    start_x: usize,
+    start_y: usize,
+    pattern: &Grid<Option<T>>,
+) -> bool {
+    pattern.rows().enumerate().all(|(pattern_y, pattern_row)| {
+        pattern_row
+            .iter()
+            .enumerate()
+            .all(|(pattern_x, pattern_element)| {
+                pattern_element.is_none()
+                    || grid.get(start_x + pattern_x, start_y + pattern_y)
+                        == pattern_element.as_ref()
+            })
+    })
 }
 
 fn charvec(s: &str) -> Vec<char> {
