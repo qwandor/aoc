@@ -1,11 +1,15 @@
+mod grid;
+
 use eyre::Report;
+use grid::Grid;
 use std::io::stdin;
 
 fn main() -> Result<(), Report> {
-    let grid: Vec<Vec<char>> = stdin()
+    let grid = stdin()
         .lines()
         .map(|line| Ok(line?.chars().collect()))
-        .collect::<Result<_, Report>>()?;
+        .collect::<Result<Vec<Vec<_>>, Report>>()?
+        .try_into()?;
     let matches = count_matches(&grid, &charvec("XMAS"));
     println!("{} matches", matches);
 
@@ -14,11 +18,11 @@ fn main() -> Result<(), Report> {
 
 /// Returns the number of times the word can be found in the grid, either horizontally, vertically
 /// or diagonally in either direction.
-fn count_matches<T: Copy + PartialEq>(grid: &[Vec<T>], word: &[T]) -> usize {
+fn count_matches<T: Copy + PartialEq>(grid: &Grid<T>, word: &[T]) -> usize {
     let word_reversed = word.iter().rev().copied().collect::<Vec<_>>();
 
     // Check for horizonal matches.
-    grid.iter()
+    grid.rows()
         .map(|row| count_1d_matches(row, &[word, &word_reversed]))
         // Check for vertical matches.
         .chain(columns(grid).map(|column| count_1d_matches(&column, &[word, &word_reversed])))
@@ -28,24 +32,24 @@ fn count_matches<T: Copy + PartialEq>(grid: &[Vec<T>], word: &[T]) -> usize {
 }
 
 /// Returns all columns of the given grid.
-fn columns<T: Copy>(grid: &[Vec<T>]) -> impl Iterator<Item = Vec<T>> + '_ {
-    let width = grid.first().map(Vec::len).unwrap_or_default();
-    (0..width).map(|x| grid.iter().map(|row| row[x]).collect::<Vec<_>>())
+fn columns<T: Copy>(grid: &Grid<T>) -> impl Iterator<Item = Vec<T>> + '_ {
+    let width = grid.width();
+    (0..width).map(|x| grid.rows().map(|row| row[x]).collect::<Vec<_>>())
 }
 
 /// Returns all diagonals of the given grid.
-fn diagonals<T: Copy>(grid: &[Vec<T>]) -> impl Iterator<Item = Vec<T>> + '_ {
-    let height = grid.len();
-    let width = grid.first().map(Vec::len).unwrap_or_default();
+fn diagonals<T: Copy>(grid: &Grid<T>) -> impl Iterator<Item = Vec<T>> + '_ {
+    let height = grid.height();
+    let width = grid.width();
     (1..width + height).flat_map(move |i| {
         [
             // Down to the right.
             (0..height)
-                .filter_map(|j| grid[j].get((i + j).checked_sub(height)?).copied())
+                .filter_map(|j| grid.get((i + j).checked_sub(height)?, j).copied())
                 .collect::<Vec<_>>(),
             // Down to the left.
             (0..height)
-                .filter_map(|j| grid[j].get((i).checked_sub(j + 1)?).copied())
+                .filter_map(|j| grid.get((i).checked_sub(j + 1)?, j).copied())
                 .collect::<Vec<_>>(),
         ]
     })
@@ -87,7 +91,8 @@ mod tests {
             charvec("C"),
         ];
         assert_eq!(
-            diagonals(&[charvec("abc"), charvec("ABC")]).collect::<Vec<_>>(),
+            diagonals(&vec![charvec("abc"), charvec("ABC")].try_into().unwrap())
+                .collect::<Vec<_>>(),
             expected
         );
         // abcd
@@ -105,7 +110,8 @@ mod tests {
             charvec("D"),
         ];
         assert_eq!(
-            diagonals(&[charvec("abcd"), charvec("ABCD")]).collect::<Vec<_>>(),
+            diagonals(&vec![charvec("abcd"), charvec("ABCD")].try_into().unwrap())
+                .collect::<Vec<_>>(),
             expected
         );
         // aA
@@ -122,27 +128,34 @@ mod tests {
             charvec("C"),
         ];
         assert_eq!(
-            diagonals(&[charvec("aA"), charvec("bB"), charvec("cC")]).collect::<Vec<_>>(),
+            diagonals(
+                &vec![charvec("aA"), charvec("bB"), charvec("cC")]
+                    .try_into()
+                    .unwrap()
+            )
+            .collect::<Vec<_>>(),
             expected
         );
     }
 
     #[test]
     fn count_empty() {
-        assert_eq!(count_matches(&[], &charvec("XMAS")), 0);
+        assert_eq!(count_matches(&Grid::new(0, 0), &charvec("XMAS")), 0);
     }
 
     #[test]
     fn count_minimal() {
         assert_eq!(
             count_matches(
-                &[
+                &vec![
                     charvec("..X..."),
                     charvec(".SAMX."),
                     charvec(".A..A."),
                     charvec("XMAS.S"),
                     charvec(".X...."),
-                ],
+                ]
+                .try_into()
+                .unwrap(),
                 &charvec("XMAS")
             ),
             4
@@ -153,20 +166,22 @@ mod tests {
     fn count_example() {
         assert_eq!(
             count_matches(
-                &[
+                &vec![
                     charvec("MMMSXXMASM"),
                     charvec("MSAMXMSMSA"),
                     charvec("AMXSXMAAMM"),
                     charvec("MSAMASMSMX"),
                     charvec("XMASAMXAMM"),
-                ],
+                ]
+                .try_into()
+                .unwrap(),
                 &charvec("XMAS")
             ),
             6
         );
         assert_eq!(
             count_matches(
-                &[
+                &vec![
                     charvec("MMMSXXMASM"),
                     charvec("MSAMXMSMSA"),
                     charvec("AMXSXMAAMM"),
@@ -177,7 +192,9 @@ mod tests {
                     charvec("SAXAMASAAA"),
                     charvec("MAMMMXMMMM"),
                     charvec("MXMXAXMASX"),
-                ],
+                ]
+                .try_into()
+                .unwrap(),
                 &charvec("XMAS")
             ),
             18
