@@ -1,12 +1,21 @@
 use eyre::{OptionExt, Report};
-use std::io::{stdin, BufRead};
+use std::{
+    cmp::Ordering,
+    collections::HashSet,
+    io::{stdin, BufRead},
+};
 
 fn main() -> Result<(), Report> {
     let (rules, updates) = parse(stdin().lock())?;
     let correct_middle_sum = sum_correct_middle_pages(&rules, &updates);
+    let incorrect_middle_sum = sort_sum_incorrect(&rules, &updates);
     println!(
         "Sum of middle pages from correct updates: {}",
         correct_middle_sum
+    );
+    println!(
+        "Sum of middle pages from incorrect updates after sorting: {}",
+        incorrect_middle_sum
     );
 
     Ok(())
@@ -56,6 +65,32 @@ fn is_order_correct(rules: &[(u64, u64)], update: &[u64]) -> bool {
         };
         before_index <= after_index
     })
+}
+
+/// Filters the updates to those which are not correct, sorts them to be correct, then sums their
+/// middle page numbers.
+fn sort_sum_incorrect(rules: &[(u64, u64)], updates: &[Vec<u64>]) -> u64 {
+    updates
+        .iter()
+        .filter(|update| !is_order_correct(rules, update))
+        .map(|update| sort(rules, update)[update.len() / 2])
+        .sum()
+}
+
+/// Sorts the given update according to the given rules.
+fn sort(rules: &[(u64, u64)], update: &[u64]) -> Vec<u64> {
+    let rules: HashSet<(u64, u64)> = rules.iter().copied().collect();
+    let mut new = update.to_owned();
+    new.sort_by(|a, b| {
+        if rules.contains(&(*a, *b)) {
+            Ordering::Less
+        } else if rules.contains(&(*b, *a)) {
+            Ordering::Greater
+        } else {
+            Ordering::Equal
+        }
+    });
+    new
 }
 
 #[cfg(test)]
@@ -127,6 +162,37 @@ mod tests {
                 ]
             ),
             143
+        );
+    }
+
+    #[test]
+    fn sort_example() {
+        assert_eq!(
+            sort(EXAMPLE_RULES, &[75, 97, 47, 61, 53]),
+            vec![97, 75, 47, 61, 53]
+        );
+        assert_eq!(sort(EXAMPLE_RULES, &[61, 13, 29]), vec![61, 29, 13]);
+        assert_eq!(
+            sort(EXAMPLE_RULES, &[97, 13, 75, 29, 47]),
+            vec![97, 75, 47, 29, 13]
+        );
+    }
+
+    #[test]
+    fn sum_incorrect_example() {
+        assert_eq!(
+            sort_sum_incorrect(
+                EXAMPLE_RULES,
+                &[
+                    vec![75, 47, 61, 53, 29],
+                    vec![97, 61, 53, 29, 13],
+                    vec![75, 29, 13],
+                    vec![75, 97, 47, 61, 53],
+                    vec![61, 13, 29],
+                    vec![97, 13, 75, 29, 47],
+                ]
+            ),
+            123
         );
     }
 }
