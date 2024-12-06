@@ -14,6 +14,13 @@ fn main() -> Result<(), Report> {
     let matches = count_matches(&grid, &charvec("XMAS"));
     println!("{} XMAS matches", matches);
 
+    let x_mas_matches = count_x_mas(&grid);
+    println!("{} X-MAS matches", x_mas_matches);
+
+    Ok(())
+}
+
+fn count_x_mas(grid: &Grid<char>) -> usize {
     let x_mas = vec![
         vec![Some('M'), None, Some('S')],
         vec![None, Some('A'), None],
@@ -21,13 +28,10 @@ fn main() -> Result<(), Report> {
     ]
     .try_into()
     .unwrap();
-    let x_mas_matches = count_2d_matches(&grid, &x_mas)
+    count_2d_matches(&grid, &x_mas)
         + count_2d_matches(&grid, &x_mas.flip_horizonal())
         + count_2d_matches(&grid, &x_mas.rotate_clockwise())
-        + count_2d_matches(&grid, &x_mas.flip_horizonal().rotate_clockwise());
-    println!("{} X-MAS matches", x_mas_matches);
-
-    Ok(())
+        + count_2d_matches(&grid, &x_mas.flip_horizonal().rotate_clockwise())
 }
 
 /// Returns the number of times the word can be found in the grid, either horizontally, vertically
@@ -164,6 +168,29 @@ mod tests {
                 &charvec("XMAS")
             ),
             18
+        );
+    }
+
+    #[test]
+    fn count_example_x_mas() {
+        assert_eq!(
+            count_x_mas(
+                &vec![
+                    charvec("MMMSXXMASM"),
+                    charvec("MSAMXMSMSA"),
+                    charvec("AMXSXMAAMM"),
+                    charvec("MSAMASMSMX"),
+                    charvec("XMASAMXAMM"),
+                    charvec("XXAMMXXAMA"),
+                    charvec("SMSMSASXSS"),
+                    charvec("SAXAMASAAA"),
+                    charvec("MAMMMXMMMM"),
+                    charvec("MXMXAXMASX"),
+                ]
+                .try_into()
+                .unwrap(),
+            ),
+            9
         );
     }
 }
