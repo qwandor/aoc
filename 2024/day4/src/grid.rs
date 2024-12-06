@@ -44,6 +44,29 @@ impl<T> Grid<T> {
     }
 }
 
+impl<T: Copy> Grid<T> {
+    /// Returns an iterator over columns of the grid.
+    pub fn columns(&self) -> impl Iterator<Item = Vec<T>> + '_ {
+        (0..self.width).map(|x| self.rows().map(|row| row[x]).collect::<Vec<_>>())
+    }
+
+    /// Returns all diagonals of the given grid.
+    pub fn diagonals(&self) -> impl Iterator<Item = Vec<T>> + '_ {
+        (1..self.width + self.height).flat_map(move |i| {
+            [
+                // Down to the right.
+                (0..self.height)
+                    .filter_map(|j| self.get((i + j).checked_sub(self.height)?, j).copied())
+                    .collect::<Vec<_>>(),
+                // Down to the left.
+                (0..self.height)
+                    .filter_map(|j| self.get((i).checked_sub(j + 1)?, j).copied())
+                    .collect::<Vec<_>>(),
+            ]
+        })
+    }
+}
+
 impl<T: Debug> Debug for Grid<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "[")?;
@@ -98,6 +121,7 @@ impl<T> TryFrom<Vec<Vec<T>>> for Grid<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::charvec;
 
     #[test]
     fn size() {
@@ -142,5 +166,69 @@ mod tests {
         assert_eq!(grid.elements, Box::from([11, 12, 21, 22, 31, 32]));
 
         assert!(Grid::try_from(vec![vec![], vec![1]]).is_err());
+    }
+
+    #[test]
+    fn get_diagonals() {
+        // abc
+        // ABC
+        let expected: Vec<Vec<char>> = vec![
+            charvec("A"),
+            charvec("a"),
+            charvec("aB"),
+            charvec("bA"),
+            charvec("bC"),
+            charvec("cB"),
+            charvec("c"),
+            charvec("C"),
+        ];
+        assert_eq!(
+            Grid::try_from(vec![charvec("abc"), charvec("ABC")])
+                .unwrap()
+                .diagonals()
+                .collect::<Vec<_>>(),
+            expected
+        );
+        // abcd
+        // ABCD
+        let expected: Vec<Vec<char>> = vec![
+            charvec("A"),
+            charvec("a"),
+            charvec("aB"),
+            charvec("bA"),
+            charvec("bC"),
+            charvec("cB"),
+            charvec("cD"),
+            charvec("dC"),
+            charvec("d"),
+            charvec("D"),
+        ];
+        assert_eq!(
+            Grid::try_from(vec![charvec("abcd"), charvec("ABCD")])
+                .unwrap()
+                .diagonals()
+                .collect::<Vec<_>>(),
+            expected
+        );
+        // aA
+        // bB
+        // cC
+        let expected: Vec<Vec<char>> = vec![
+            charvec("c"),
+            charvec("a"),
+            charvec("bC"),
+            charvec("Ab"),
+            charvec("aB"),
+            charvec("Bc"),
+            charvec("A"),
+            charvec("C"),
+        ];
+        assert_eq!(
+            Grid::try_from(vec![charvec("aA"), charvec("bB"), charvec("cC")])
+                .unwrap()
+                .diagonals()
+                .collect::<Vec<_>>(),
+            expected
+        );
     }
 }
