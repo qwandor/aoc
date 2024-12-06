@@ -32,6 +32,15 @@ impl<T> Grid<T> {
         }
     }
 
+    /// Gets a mutable reference to the element at the given position, if it is within bounds.
+    pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
+        if y < self.height && x < self.width {
+            Some(&mut self.elements[y * self.width + x])
+        } else {
+            None
+        }
+    }
+
     /// Returns an iterator over rows of the grid.
     pub fn rows(&self) -> impl DoubleEndedIterator<Item = &[T]> {
         if self.elements.is_empty() {
