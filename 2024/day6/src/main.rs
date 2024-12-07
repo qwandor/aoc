@@ -1,13 +1,21 @@
 use eyre::{bail, OptionExt, Report};
-use std::io::{stdin, BufRead};
+use std::{
+    collections::HashSet,
+    io::{stdin, BufRead},
+};
 use utils::{grid::Grid, parse_chargrid};
 
 fn main() -> Result<(), Report> {
     let initial_state = State::parse(stdin().lock())?;
-    let visited_positions_count = count_visited_positions(initial_state);
+    let visited_positions_count = count_visited_positions(initial_state.clone());
     println!(
         "The guard will visit {} positions.",
         visited_positions_count
+    );
+    let looping_obstruction_count = count_looping_obstacles(initial_state);
+    println!(
+        "There are {} possible extra obstruction positions to cause the guard to loop.",
+        looping_obstruction_count
     );
 
     Ok(())
@@ -33,6 +41,44 @@ fn count_visited_positions(initial_state: State) -> usize {
         .rows()
         .map(|row| row.iter().copied().map(usize::from).sum::<usize>())
         .sum()
+}
+
+/// Checks whether the given state will result in the guard walking round in circles.
+fn will_loop(mut state: State) -> bool {
+    let mut guard_states = HashSet::new();
+    while state.step_guard() {
+        let guard_state = (state.guard_position, state.guard_direction);
+        if guard_states.contains(&guard_state) {
+            return true;
+        }
+        guard_states.insert(guard_state);
+    }
+    false
+}
+
+/// Returns the number of positions in which a single obstactle could be placed to make the guard
+/// loop.
+fn count_looping_obstacles(initial_state: State) -> usize {
+    // Find candidate positions by checking where the guard will visit without obstactles.
+    let candidates = find_visited_positions(initial_state.clone())
+        .rows()
+        .enumerate()
+        .flat_map(|(y, row)| {
+            row.iter()
+                .enumerate()
+                .filter_map(move |(x, visited)| if *visited { Some((x, y)) } else { None })
+        })
+        .collect::<Vec<_>>();
+
+    // Check which will actually result in loops.
+    candidates
+        .into_iter()
+        .filter(|new_obstruction| {
+            let mut state = initial_state.clone();
+            state.obstructions.push(*new_obstruction);
+            will_loop(state)
+        })
+        .count()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -132,7 +178,7 @@ impl State {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum Direction {
     Up,
     Down,
@@ -213,5 +259,84 @@ mod tests {
         )
         .unwrap();
         assert_eq!(count_visited_positions(initial_state), 41);
+    }
+
+    #[test]
+    fn example_loops() {
+        assert!(!will_loop(
+            State::parse(
+                "\
+....#.....
+.........#
+..........
+..#.......
+.......#..
+..........
+.#..^.....
+........#.
+#.........
+......#...
+"
+                .as_bytes()
+            )
+            .unwrap()
+        ));
+        assert!(will_loop(
+            State::parse(
+                "\
+....#.....
+.........#
+..........
+..#.......
+.......#..
+..........
+.#.#^.....
+........#.
+#.........
+......#...
+"
+                .as_bytes()
+            )
+            .unwrap()
+        ));
+        assert!(will_loop(
+            State::parse(
+                "\
+....#.....
+.........#
+..........
+..#.......
+.......#..
+..........
+.#..^.....
+......#.#.
+#.........
+......#...
+"
+                .as_bytes()
+            )
+            .unwrap()
+        ));
+    }
+
+    #[test]
+    fn example_loop_count() {
+        let initial_state = State::parse(
+            "\
+....#.....
+.........#
+..........
+..#.......
+.......#..
+..........
+.#..^.....
+........#.
+#.........
+......#...
+"
+            .as_bytes(),
+        )
+        .unwrap();
+        assert_eq!(count_looping_obstacles(initial_state), 6);
     }
 }
