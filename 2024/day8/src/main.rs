@@ -48,31 +48,47 @@ fn count_antinodes(world: &World) -> usize {
             .push(antenna.position);
     }
 
-    let mut antinodes = HashSet::<(usize, usize)>::new();
-    for antenna_positions in antennas_by_frequency.values() {
-        for (i, antenna1) in antenna_positions.iter().enumerate() {
-            for antenna2 in &antenna_positions[0..i] {
-                if let (Some(x), Some(y)) = (
-                    (antenna1.0 * 2).checked_sub(antenna2.0),
-                    (antenna1.1 * 2).checked_sub(antenna2.1),
-                ) {
-                    if x < world.width && y < world.height {
-                        antinodes.insert((x, y));
-                    }
-                }
-                if let (Some(x), Some(y)) = (
-                    (antenna2.0 * 2).checked_sub(antenna1.0),
-                    (antenna2.1 * 2).checked_sub(antenna1.1),
-                ) {
-                    if x < world.width && y < world.height {
-                        antinodes.insert((x, y));
-                    }
-                }
-            }
-        }
-    }
+    let antinodes: HashSet<(usize, usize)> = antennas_by_frequency
+        .values()
+        .flat_map(|antenna_positions| {
+            antenna_positions
+                .iter()
+                .enumerate()
+                .flat_map(|(i, antenna1)| {
+                    antenna_positions[0..i].iter().flat_map(|antenna2| {
+                        antinodes_for_antennas(antenna1, antenna2, world.width, world.height)
+                    })
+                })
+        })
+        .collect();
 
     antinodes.len()
+}
+
+fn antinodes_for_antennas(
+    antenna1: &(usize, usize),
+    antenna2: &(usize, usize),
+    width: usize,
+    height: usize,
+) -> Vec<(usize, usize)> {
+    let mut antinodes = Vec::new();
+    if let (Some(x), Some(y)) = (
+        (antenna1.0 * 2).checked_sub(antenna2.0),
+        (antenna1.1 * 2).checked_sub(antenna2.1),
+    ) {
+        if x < width && y < height {
+            antinodes.push((x, y));
+        }
+    }
+    if let (Some(x), Some(y)) = (
+        (antenna2.0 * 2).checked_sub(antenna1.0),
+        (antenna2.1 * 2).checked_sub(antenna1.1),
+    ) {
+        if x < width && y < height {
+            antinodes.push((x, y));
+        }
+    }
+    antinodes
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
