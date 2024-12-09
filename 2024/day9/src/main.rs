@@ -6,10 +6,22 @@ fn main() -> Result<(), Report> {
     stdin().read_line(&mut line)?;
 
     let lengths = parse_digits(line.trim())?;
-    let mut blocks = lengths_to_blocks(&lengths);
-    compact(&mut blocks);
-    let checksum = checksum(&blocks);
-    println!("Checksum after compacting: {}", checksum);
+    let original_blocks = lengths_to_blocks(&lengths);
+
+    {
+        let mut blocks = original_blocks.clone();
+        compact(&mut blocks);
+        println!("Checksum after compacting: {}", checksum(&blocks));
+    }
+
+    {
+        let mut blocks = original_blocks.clone();
+        compact_no_fragmentation(&mut blocks);
+        println!(
+            "Checksum after compacting without fragmentation: {}",
+            checksum(&blocks)
+        );
+    }
 
     Ok(())
 }
@@ -49,6 +61,39 @@ fn compact(blocks: &mut [Option<usize>]) {
         } else {
             blocks.swap(left, right);
             left += 1;
+            right -= 1;
+        }
+    }
+}
+
+fn compact_no_fragmentation(blocks: &mut [Option<usize>]) {
+    let mut right = blocks.len();
+    while right > 0 {
+        if let Some(file_id) = blocks[right - 1] {
+            // Find the start index of the file.
+            let file_start = blocks[0..right]
+                .iter()
+                .position(|block| *block == Some(file_id))
+                .unwrap();
+            let file_length = right - file_start;
+
+            // Try to find somewhere earlier to move the file.
+            if let Some(new_position) = (0..file_start).find(|candidate_start| {
+                blocks[*candidate_start..*candidate_start + file_length]
+                    .iter()
+                    .all(|block| block.is_none())
+            }) {
+                // Move the file.
+                for block in &mut blocks[new_position..new_position + file_length] {
+                    *block = Some(file_id);
+                }
+                for block in &mut blocks[file_start..file_start + file_length] {
+                    *block = None;
+                }
+            }
+
+            right -= file_length;
+        } else {
             right -= 1;
         }
     }
@@ -160,5 +205,13 @@ mod tests {
             ]),
             1928
         );
+    }
+
+    #[test]
+    fn compact_example_without_fragmentation() {
+        let lengths = parse_digits(&"2333133121414131402").unwrap();
+        let mut blocks = lengths_to_blocks(&lengths);
+        compact_no_fragmentation(&mut blocks);
+        assert_eq!(checksum(&blocks), 2858);
     }
 }
