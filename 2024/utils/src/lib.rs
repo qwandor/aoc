@@ -11,7 +11,7 @@ pub fn charvec(s: &str) -> Vec<char> {
 pub fn parse_chargrid(input: impl BufRead) -> Result<Grid<char>, Report> {
     input
         .lines()
-        .map(|line| Ok(charvec(&line?)))
+        .map(|line| Ok(charvec(line?.trim())))
         .collect::<Result<Vec<_>, Report>>()?
         .try_into()
 }
