@@ -3,7 +3,7 @@ use std::{
     collections::HashSet,
     io::{stdin, BufRead},
 };
-use utils::{grid::Grid, parse_chargrid};
+use utils::{grid::Grid, parse_chargrid, Direction};
 
 fn main() -> Result<(), Report> {
     let initial_state = State::parse(stdin().lock())?;
@@ -143,31 +143,11 @@ impl State {
 
     /// Move the guard one step, or return false if the guard would move out of bounds.
     fn step_guard(&mut self) -> bool {
-        let next_guard_position = match self.guard_direction {
-            Direction::Left => {
-                if self.guard_position.0 == 0 {
-                    return false;
-                }
-                (self.guard_position.0 - 1, self.guard_position.1)
-            }
-            Direction::Right => {
-                if self.guard_position.0 + 1 == self.width {
-                    return false;
-                }
-                (self.guard_position.0 + 1, self.guard_position.1)
-            }
-            Direction::Up => {
-                if self.guard_position.1 == 0 {
-                    return false;
-                }
-                (self.guard_position.0, self.guard_position.1 - 1)
-            }
-            Direction::Down => {
-                if self.guard_position.1 + 1 == self.height {
-                    return false;
-                }
-                (self.guard_position.0, self.guard_position.1 + 1)
-            }
+        let Some(next_guard_position) =
+            self.guard_direction
+                .move_from(self.guard_position, self.width, self.height)
+        else {
+            return false;
         };
         if self.obstructions.contains(&next_guard_position) {
             self.guard_direction = self.guard_direction.rotate_clockwise();
@@ -175,25 +155,6 @@ impl State {
             self.guard_position = next_guard_position;
         }
         true
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
-impl Direction {
-    fn rotate_clockwise(self) -> Self {
-        match self {
-            Self::Up => Self::Right,
-            Self::Right => Self::Down,
-            Self::Down => Self::Left,
-            Self::Left => Self::Up,
-        }
     }
 }
 

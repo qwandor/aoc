@@ -15,3 +15,60 @@ pub fn parse_chargrid(input: impl BufRead) -> Result<Grid<char>, Report> {
         .collect::<Result<Vec<_>, Report>>()?
         .try_into()
 }
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl Direction {
+    pub fn rotate_clockwise(self) -> Self {
+        match self {
+            Self::Up => Self::Right,
+            Self::Right => Self::Down,
+            Self::Down => Self::Left,
+            Self::Left => Self::Up,
+        }
+    }
+
+    pub fn move_from(
+        self,
+        position: (usize, usize),
+        width: usize,
+        height: usize,
+    ) -> Option<(usize, usize)> {
+        match self {
+            Self::Left => {
+                if position.0 == 0 {
+                    None
+                } else {
+                    Some((position.0 - 1, position.1))
+                }
+            }
+            Self::Right => {
+                if position.0 + 1 == width {
+                    None
+                } else {
+                    Some((position.0 + 1, position.1))
+                }
+            }
+            Self::Up => {
+                if position.1 == 0 {
+                    None
+                } else {
+                    Some((position.0, position.1 - 1))
+                }
+            }
+            Self::Down => {
+                if position.1 + 1 == height {
+                    None
+                } else {
+                    Some((position.0, position.1 + 1))
+                }
+            }
+        }
+    }
+}
