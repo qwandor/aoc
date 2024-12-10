@@ -25,6 +25,8 @@ pub enum Direction {
 }
 
 impl Direction {
+    pub const ALL: [Self; 4] = [Self::Up, Self::Down, Self::Left, Self::Right];
+
     pub fn rotate_clockwise(self) -> Self {
         match self {
             Self::Up => Self::Right,
