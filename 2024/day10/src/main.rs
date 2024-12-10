@@ -9,8 +9,10 @@ fn main() -> Result<(), Report> {
     let grid = parse(stdin().lock())?;
     // Find trailheads.
     let trailheads = trailheads(&grid);
-    let score_sum = sum_trailhead_scores(&grid, &trailheads);
+    let score_sum = sum_trailheads(&grid, &trailheads, trail_score);
     println!("Sum of trailhead scores is {}", score_sum);
+    let rating_sum = sum_trailheads(&grid, &trailheads, trail_rating);
+    println!("Sum of trailhead ratings is {}", rating_sum);
 
     Ok(())
 }
@@ -42,11 +44,15 @@ fn trailheads(grid: &Grid<u8>) -> Vec<(usize, usize)> {
         .collect()
 }
 
-/// Sums the scores of all trailheads.
-fn sum_trailhead_scores(grid: &Grid<u8>, trailheads: &[(usize, usize)]) -> usize {
+/// Sums the scores of all trailheads according to the given scoring function.
+fn sum_trailheads(
+    grid: &Grid<u8>,
+    trailheads: &[(usize, usize)],
+    scoring_function: fn(&Grid<u8>, (usize, usize)) -> usize,
+) -> usize {
     trailheads
         .iter()
-        .map(|trailhead| trail_score(grid, *trailhead))
+        .map(|trailhead| scoring_function(grid, *trailhead))
         .sum()
 }
 
@@ -56,6 +62,11 @@ fn trail_score(grid: &Grid<u8>, trailhead: (usize, usize)) -> usize {
         .into_iter()
         .collect::<HashSet<_>>();
     peaks.len()
+}
+
+/// Returns the rating of the trail starting at the given trailhead.
+fn trail_rating(grid: &Grid<u8>, trailhead: (usize, usize)) -> usize {
+    trail_peaks(grid, trailhead).len()
 }
 
 /// Returns all peaks reachable from the given starting point by ascending one each time.
@@ -137,6 +148,8 @@ mod tests {
             ]
         );
         assert_eq!(trail_score(&grid, (2, 0)), 5);
-        assert_eq!(sum_trailhead_scores(&grid, &trailheads), 36);
+        assert_eq!(trail_rating(&grid, (2, 0)), 20);
+        assert_eq!(sum_trailheads(&grid, &trailheads, trail_score), 36);
+        assert_eq!(sum_trailheads(&grid, &trailheads, trail_rating), 81);
     }
 }
