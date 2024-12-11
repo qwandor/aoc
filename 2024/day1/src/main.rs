@@ -28,8 +28,8 @@ fn main() -> Result<(), Report> {
 /// Calculates and sums the distances.
 fn total_distance(left_sorted: &[u64], right_sorted: &[u64]) -> u64 {
     left_sorted
-        .into_iter()
-        .zip(right_sorted.into_iter())
+        .iter()
+        .zip(right_sorted)
         .map(|(left, right)| left.abs_diff(*right))
         .sum()
 }
@@ -40,7 +40,7 @@ fn similarity_score(left: &[u64], right: &[u64]) -> u64 {
     for right in right {
         *right_counts.entry(*right).or_default() += 1;
     }
-    left.into_iter()
+    left.iter()
         .map(|left| left * right_counts.get(left).copied().unwrap_or_default())
         .sum()
 }

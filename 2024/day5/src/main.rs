@@ -25,7 +25,7 @@ fn parse(input: impl BufRead) -> Result<(Vec<(u64, u64)>, Vec<Vec<u64>>), Report
     let mut lines = input.lines();
 
     let mut rules = Vec::new();
-    while let Some(line) = lines.next() {
+    for line in &mut lines {
         let line = line?;
         if line.is_empty() {
             break;

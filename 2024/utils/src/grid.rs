@@ -90,8 +90,7 @@ impl<T: Copy> Grid<T> {
     pub fn flip_horizonal(&self) -> Self {
         let elements = self
             .rows()
-            .map(|row| row.into_iter().rev())
-            .flatten()
+            .flat_map(|row| row.iter().rev())
             .copied()
             .collect();
         Self {

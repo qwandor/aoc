@@ -22,11 +22,11 @@ fn parse(input: impl BufRead) -> Result<Grid<u8>, Report> {
     input
         .lines()
         .map(|line| {
-            Ok(line?
+            line?
                 .trim()
                 .chars()
                 .map(|c| Ok(c.to_digit(10).ok_or_eyre("Not a digit")? as u8))
-                .collect::<Result<_, Report>>()?)
+                .collect::<Result<_, Report>>()
         })
         .collect::<Result<Vec<Vec<u8>>, Report>>()?
         .try_into()

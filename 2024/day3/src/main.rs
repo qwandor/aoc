@@ -40,7 +40,7 @@ fn parse(mut input: &str) -> Vec<Instruction> {
     let mut instructions = Vec::new();
     'parse: while !input.is_empty() {
         for (regex, f) in patterns {
-            if let Some(captures) = regex.captures(&input) {
+            if let Some(captures) = regex.captures(input) {
                 instructions.push(f(&captures));
                 input = &input[captures.len()..];
                 continue 'parse;

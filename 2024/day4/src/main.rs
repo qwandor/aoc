@@ -22,10 +22,10 @@ fn count_x_mas(grid: &Grid<char>) -> usize {
     ]
     .try_into()
     .unwrap();
-    count_2d_matches(&grid, &x_mas)
-        + count_2d_matches(&grid, &x_mas.flip_horizonal())
-        + count_2d_matches(&grid, &x_mas.rotate_clockwise())
-        + count_2d_matches(&grid, &x_mas.flip_horizonal().rotate_clockwise())
+    count_2d_matches(grid, &x_mas)
+        + count_2d_matches(grid, &x_mas.flip_horizonal())
+        + count_2d_matches(grid, &x_mas.rotate_clockwise())
+        + count_2d_matches(grid, &x_mas.flip_horizonal().rotate_clockwise())
 }
 
 /// Returns the number of times the word can be found in the grid, either horizontally, vertically

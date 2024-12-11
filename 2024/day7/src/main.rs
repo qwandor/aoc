@@ -5,7 +5,7 @@ use eyre::{OptionExt, Report};
 fn main() -> Result<(), Report> {
     let equations = stdin()
         .lines()
-        .map(|line| Ok(line?.parse()?))
+        .map(|line| line?.parse())
         .collect::<Result<Vec<Equation>, Report>>()?;
 
     let plus_minus_valid_sum = valid_sum(&equations, &[Operator::Plus, Operator::Times]);

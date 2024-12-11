@@ -52,7 +52,7 @@ fn safe(levels: &[u64]) -> bool {
 
 /// Returns whether the levels are safe if one is removed.
 fn safe_with_dampener(levels: &[u64]) -> bool {
-    (0..levels.len()).into_iter().any(|level_to_remove| {
+    (0..levels.len()).any(|level_to_remove| {
         let mut levels = levels.to_vec();
         levels.remove(level_to_remove);
         safe(&levels)
