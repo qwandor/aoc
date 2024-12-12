@@ -51,6 +51,24 @@ impl<T> Grid<T> {
             self.elements.chunks_exact(self.width)
         }
     }
+
+    /// Returns a new grid of the same size, constructed by calling the given function on each
+    /// element.
+    pub fn map<U>(&self, f: impl Fn(&T) -> U) -> Grid<U> {
+        Grid {
+            elements: self.elements.iter().map(f).collect(),
+            width: self.width,
+            height: self.height,
+        }
+    }
+
+    /// Returns an iterator over all elements in the grid, along with their co-ordinates.
+    pub fn elements(&self) -> impl Iterator<Item = (usize, usize, &T)> {
+        self.elements
+            .iter()
+            .enumerate()
+            .map(|(i, e)| (i % self.width, i / self.width, e))
+    }
 }
 
 impl<T: Copy> Grid<T> {
