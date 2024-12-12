@@ -82,16 +82,12 @@ fn subgrid_matches<T: PartialEq>(
     start_y: usize,
     pattern: &Grid<Option<T>>,
 ) -> bool {
-    pattern.rows().enumerate().all(|(pattern_y, pattern_row)| {
-        pattern_row
-            .iter()
-            .enumerate()
-            .all(|(pattern_x, pattern_element)| {
-                pattern_element.is_none()
-                    || grid.get(start_x + pattern_x, start_y + pattern_y)
-                        == pattern_element.as_ref()
-            })
-    })
+    pattern
+        .elements()
+        .all(|(pattern_x, pattern_y, pattern_element)| {
+            pattern_element.is_none()
+                || grid.get(start_x + pattern_x, start_y + pattern_y) == pattern_element.as_ref()
+        })
 }
 
 #[cfg(test)]

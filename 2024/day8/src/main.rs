@@ -21,19 +21,16 @@ fn main() -> Result<(), Report> {
 fn parse(input: impl BufRead) -> Result<World, Report> {
     let grid = parse_chargrid(input)?;
     let antennas = grid
-        .rows()
-        .enumerate()
-        .flat_map(|(y, row)| {
-            row.iter().enumerate().filter_map(move |(x, c)| {
-                if *c == '.' {
-                    None
-                } else {
-                    Some(Antenna {
-                        frequency: *c,
-                        position: (x, y),
-                    })
-                }
-            })
+        .elements()
+        .filter_map(|(x, y, c)| {
+            if *c == '.' {
+                None
+            } else {
+                Some(Antenna {
+                    frequency: *c,
+                    position: (x, y),
+                })
+            }
         })
         .collect();
 

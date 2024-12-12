@@ -34,13 +34,8 @@ fn parse(input: impl BufRead) -> Result<Grid<u8>, Report> {
 
 /// Returns the (x, y) co-ordinates of all 0 height points.
 fn trailheads(grid: &Grid<u8>) -> Vec<(usize, usize)> {
-    grid.rows()
-        .enumerate()
-        .flat_map(|(y, row)| {
-            row.iter()
-                .enumerate()
-                .filter_map(move |(x, e)| if *e == 0 { Some((x, y)) } else { None })
-        })
+    grid.elements()
+        .filter_map(|(x, y, e)| if *e == 0 { Some((x, y)) } else { None })
         .collect()
 }
 

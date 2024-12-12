@@ -38,8 +38,8 @@ fn find_visited_positions(mut state: State) -> Grid<bool> {
 fn count_visited_positions(initial_state: State) -> usize {
     let visited_positions = find_visited_positions(initial_state);
     visited_positions
-        .rows()
-        .map(|row| row.iter().copied().map(usize::from).sum::<usize>())
+        .elements()
+        .map(|(_, _, e)| usize::from(*e))
         .sum()
 }
 
@@ -61,13 +61,8 @@ fn will_loop(mut state: State) -> bool {
 fn count_looping_obstacles(initial_state: State) -> usize {
     // Find candidate positions by checking where the guard will visit without obstactles.
     let candidates = find_visited_positions(initial_state.clone())
-        .rows()
-        .enumerate()
-        .flat_map(|(y, row)| {
-            row.iter()
-                .enumerate()
-                .filter_map(move |(x, visited)| if *visited { Some((x, y)) } else { None })
-        })
+        .elements()
+        .filter_map(|(x, y, visited)| if *visited { Some((x, y)) } else { None })
         .collect::<Vec<_>>();
 
     // Check which will actually result in loops.
@@ -99,35 +94,33 @@ impl State {
         let mut obstructions = Vec::new();
         let mut guard_position = None;
         let mut guard_direction = Direction::Up;
-        for (y, row) in grid.rows().enumerate() {
-            for (x, c) in row.iter().enumerate() {
-                match c {
-                    '#' => {
-                        obstructions.push((x, y));
-                    }
-                    '>' | '<' | '^' | 'v' if guard_position.is_some() => {
-                        bail!("Found two guards.");
-                    }
-                    '>' => {
-                        guard_direction = Direction::Right;
-                        guard_position = Some((x, y));
-                    }
-                    '<' => {
-                        guard_direction = Direction::Left;
-                        guard_position = Some((x, y));
-                    }
-                    '^' => {
-                        guard_direction = Direction::Up;
-                        guard_position = Some((x, y));
-                    }
-                    'v' => {
-                        guard_direction = Direction::Down;
-                        guard_position = Some((x, y));
-                    }
-                    '.' => {}
-                    _ => {
-                        bail!("Unexpected character in input: '{}'", c);
-                    }
+        for (x, y, c) in grid.elements() {
+            match c {
+                '#' => {
+                    obstructions.push((x, y));
+                }
+                '>' | '<' | '^' | 'v' if guard_position.is_some() => {
+                    bail!("Found two guards.");
+                }
+                '>' => {
+                    guard_direction = Direction::Right;
+                    guard_position = Some((x, y));
+                }
+                '<' => {
+                    guard_direction = Direction::Left;
+                    guard_position = Some((x, y));
+                }
+                '^' => {
+                    guard_direction = Direction::Up;
+                    guard_position = Some((x, y));
+                }
+                'v' => {
+                    guard_direction = Direction::Down;
+                    guard_position = Some((x, y));
+                }
+                '.' => {}
+                _ => {
+                    bail!("Unexpected character in input: '{}'", c);
                 }
             }
         }
