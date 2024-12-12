@@ -121,6 +121,9 @@ impl<T: Debug> Debug for Grid<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "[")?;
         for y in 0..self.height {
+            if y != 0 {
+                write!(f, ", ")?;
+            }
             write!(
                 f,
                 "{:?}",
