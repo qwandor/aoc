@@ -16,7 +16,26 @@ fn main() -> Result<(), Report> {
         total_prize_cost
     );
 
+    let corrected_total_prize_cost = machines
+        .into_iter()
+        .filter_map(|machine| prize_cost(&correct_prize(machine)))
+        .sum::<u64>();
+    println!(
+        "Total cost of all winnable prizes after correction: {} tokens",
+        corrected_total_prize_cost
+    );
+
     Ok(())
+}
+
+fn correct_prize(machine: Machine) -> Machine {
+    Machine {
+        prize: (
+            machine.prize.0 + 10000000000000,
+            machine.prize.1 + 10000000000000,
+        ),
+        ..machine
+    }
 }
 
 fn parse(input: &str) -> Result<Vec<Machine>, Report> {
@@ -132,6 +151,42 @@ Prize: X=12748, Y=12176
                 prize: (18641, 10279),
             }),
             None
+        );
+    }
+
+    #[test]
+    fn corrected_example_prize_costs() {
+        assert_eq!(
+            prize_cost(&correct_prize(Machine {
+                button_a: (94, 34),
+                button_b: (22, 67),
+                prize: (8400, 5400),
+            })),
+            None
+        );
+        assert_eq!(
+            prize_cost(&correct_prize(Machine {
+                button_a: (26, 66),
+                button_b: (67, 21),
+                prize: (12748, 12176),
+            })),
+            Some(459236326669)
+        );
+        assert_eq!(
+            prize_cost(&correct_prize(Machine {
+                button_a: (17, 86),
+                button_b: (84, 37),
+                prize: (7870, 6450),
+            })),
+            None
+        );
+        assert_eq!(
+            prize_cost(&correct_prize(Machine {
+                button_a: (69, 23),
+                button_b: (27, 71),
+                prize: (18641, 10279),
+            })),
+            Some(416082282239)
         );
     }
 }
