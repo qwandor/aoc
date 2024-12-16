@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 eyre = "0.6.12"
 regex = "1.11.1"
+utils = { path = "../utils" }

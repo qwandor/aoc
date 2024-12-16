@@ -1,25 +1,80 @@
 use eyre::{eyre, Report};
 use regex::Regex;
 use std::io::{stdin, BufRead};
+use utils::grid::Grid;
 
 const WIDTH: i64 = 101;
 const HEIGHT: i64 = 103;
 
 fn main() -> Result<(), Report> {
     let mut robots = parse(stdin().lock())?;
-    run(&mut robots, 100, WIDTH, HEIGHT);
-    let safety_factor = safety_factor(&robots, WIDTH, HEIGHT);
-    println!("Safety factor after 100 seconds: {}", safety_factor);
+
+    {
+        let mut robots = robots.clone();
+        run(&mut robots, 100, WIDTH, HEIGHT);
+        let safety_factor = safety_factor(&robots, WIDTH, HEIGHT);
+        println!("Safety factor after 100 seconds: {}", safety_factor);
+    }
+
+    find_easter_egg(&mut robots, WIDTH, HEIGHT);
 
     Ok(())
+}
+
+fn find_easter_egg(robots: &mut [Robot], width: i64, height: i64) {
+    for i in 0.. {
+        if contains_easter_egg(robots, width, height) {
+            println!("Found easter egg after {} seconds:", i);
+            break;
+        }
+        step_all(robots, width, height);
+    }
+    print_robots(robots, width, height);
+}
+
+fn contains_easter_egg(robots: &[Robot], width: i64, height: i64) -> bool {
+    let grid = robot_grid(robots, width, height);
+    let no_overlaps = grid.elements().all(|(_, _, count)| *count <= 1);
+    no_overlaps
+}
+
+fn robot_grid(robots: &[Robot], width: i64, height: i64) -> Grid<usize> {
+    let mut grid: Grid<usize> = Grid::new(width.try_into().unwrap(), height.try_into().unwrap());
+    for robot in robots {
+        *grid
+            .get_mut(
+                robot.position.0.try_into().unwrap(),
+                robot.position.1.try_into().unwrap(),
+            )
+            .unwrap() += 1;
+    }
+    grid
+}
+
+fn print_robots(robots: &[Robot], width: i64, height: i64) {
+    let grid = robot_grid(robots, width, height);
+    for row in grid.rows() {
+        for entry in row {
+            if *entry == 0 {
+                print!(".");
+            } else {
+                print!("{}", entry)
+            }
+        }
+        println!();
+    }
 }
 
 /// Runs the given robots for the given number of seconds.
 fn run(robots: &mut [Robot], seconds: u64, width: i64, height: i64) {
     for _ in 0..seconds {
-        for robot in &mut *robots {
-            robot.step(width, height);
-        }
+        step_all(robots, width, height);
+    }
+}
+
+fn step_all(robots: &mut [Robot], width: i64, height: i64) {
+    for robot in &mut *robots {
+        robot.step(width, height);
     }
 }
 
