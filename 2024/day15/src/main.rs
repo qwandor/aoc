@@ -76,23 +76,19 @@ impl State {
 
     /// Moves the one robot one step in the given direction, if possible.
     fn step(&mut self, direction: Direction) -> Result<(), Report> {
-        println!("Robot at {:?}, moving {:?}", self.robot, direction);
         let Some(robot_next) = direction.move_from(self.robot, self.map.width(), self.map.height())
         else {
             // Robot can't move off the map, so do nothing.
-            println!("Can't move off map");
             return Ok(());
         };
 
         match self.map.get(robot_next.0, robot_next.1).unwrap() {
             '#' => {
                 // Robot can't move into a wall, so do nothing.
-                println!("Robot hit a wall");
                 return Ok(());
             }
             'O' => {
                 // Move the box first, if possible.
-                println!("Robot trying to push a box");
                 if !push_box(&mut self.map, robot_next, direction)? {
                     return Ok(());
                 }
