@@ -14,7 +14,7 @@ fn main() -> Result<(), Report> {
 fn parse(input: impl BufRead) -> Result<(State, Vec<Direction>), Report> {
     let mut lines = input.lines();
 
-    let mut map: Grid<char> = (&mut lines)
+    let map: Grid<char> = (&mut lines)
         .map_while(|line| match line {
             Err(e) => Some(Err(e.into())),
             Ok(line) => {
@@ -29,18 +29,7 @@ fn parse(input: impl BufRead) -> Result<(State, Vec<Direction>), Report> {
         .collect::<Result<Vec<_>, Report>>()?
         .try_into()?;
 
-    let mut robot = None;
-    for (x, y, element) in map.elements_mut() {
-        if *element == '@' {
-            robot = Some((x, y));
-            *element = '.';
-            break;
-        }
-    }
-    let state = State {
-        map,
-        robot: robot.ok_or_eyre("No robot")?,
-    };
+    let state = State { map };
 
     let mut directions = Vec::new();
     for line in lines {
@@ -62,7 +51,6 @@ fn parse(input: impl BufRead) -> Result<(State, Vec<Direction>), Report> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct State {
     map: Grid<char>,
-    robot: (usize, usize),
 }
 
 impl State {
@@ -74,31 +62,57 @@ impl State {
         Ok(())
     }
 
+    fn robot_position(&self) -> Option<(usize, usize)> {
+        for (x, y, element) in self.map.elements() {
+            if *element == '@' {
+                return Some((x, y));
+            }
+        }
+        None
+    }
+
     /// Moves the one robot one step in the given direction, if possible.
     fn step(&mut self, direction: Direction) -> Result<(), Report> {
-        let Some(robot_next) = direction.move_from(self.robot, self.map.width(), self.map.height())
-        else {
-            // Robot can't move off the map, so do nothing.
-            return Ok(());
-        };
+        let robot_position = self.robot_position().ok_or_eyre("No robot")?;
+        self.push_box(robot_position, direction)?;
+        Ok(())
+    }
 
-        match self.map.get(robot_next.0, robot_next.1).unwrap() {
+    /// Attempts to push the box or robot (if any) at the given location in the given direction.
+    ///
+    /// Returns true if the box was pushed, or false if it couldn't be.
+    fn push_box(&mut self, position: (usize, usize), direction: Direction) -> Result<bool, Report> {
+        let c = *self.map.get(position.0, position.1).unwrap();
+        match c {
             '#' => {
-                // Robot can't move into a wall, so do nothing.
-                return Ok(());
+                // Can't push a wall.
+                Ok(false)
             }
-            'O' => {
-                // Move the box first, if possible.
-                if !push_box(&mut self.map, robot_next, direction)? {
-                    return Ok(());
+            'O' | '@' => {
+                let Some(target_position) =
+                    direction.move_from(position, self.map.width(), self.map.height())
+                else {
+                    // Can't push off the edge of the map.
+                    return Ok(false);
+                };
+                // Push whatever is in the target position first.
+                if self.push_box(target_position, direction)? {
+                    *self
+                        .map
+                        .get_mut(target_position.0, target_position.1)
+                        .unwrap() = c;
+                    *self.map.get_mut(position.0, position.1).unwrap() = '.';
+                    Ok(true)
+                } else {
+                    Ok(false)
                 }
             }
-            '.' => {}
+            '.' => {
+                // Nothing to push.
+                Ok(true)
+            }
             c => bail!("Unexpected map character '{}'", c),
         }
-        self.robot = robot_next;
-
-        Ok(())
     }
 
     /// Returns the sum of the GPS co-ordinates of all boxes on the map.
@@ -107,42 +121,6 @@ impl State {
             .elements()
             .map(|(x, y, e)| if *e == 'O' { x + 100 * y } else { 0 })
             .sum()
-    }
-}
-
-/// Attempts to push the box (if any) at the given location in the given direction.
-///
-/// Returns true if the box was pushed, or false if it couldn't be.
-fn push_box(
-    map: &mut Grid<char>,
-    position: (usize, usize),
-    direction: Direction,
-) -> Result<bool, Report> {
-    match map.get(position.0, position.1).unwrap() {
-        '#' => {
-            // Can't push a wall.
-            Ok(false)
-        }
-        'O' => {
-            let Some(target_position) = direction.move_from(position, map.width(), map.height())
-            else {
-                // Can't push off the edge of the map.
-                return Ok(false);
-            };
-            // Push whatever is in the target position first.
-            if push_box(map, target_position, direction)? {
-                *map.get_mut(target_position.0, target_position.1).unwrap() = 'O';
-                *map.get_mut(position.0, position.1).unwrap() = '.';
-                Ok(true)
-            } else {
-                Ok(false)
-            }
-        }
-        '.' => {
-            // Nothing to push.
-            Ok(true)
-        }
-        c => bail!("Unexpected map character '{}'", c),
     }
 }
 
@@ -168,13 +146,13 @@ mod tests {
             .as_bytes(),
         )
         .unwrap();
-        assert_eq!(state.robot, (2, 2));
+        assert_eq!(state.robot_position().unwrap(), (2, 2));
         assert_eq!(
             state.map,
             Grid::try_from(vec![
                 charvec("########"),
                 charvec("#..O.O.#"),
-                charvec("##..O..#"),
+                charvec("##@.O..#"),
                 charvec("#...O..#"),
                 charvec("#.#.O..#"),
                 charvec("#...O..#"),
@@ -224,21 +202,21 @@ mod tests {
         )
         .unwrap();
         state.step(directions[0]).unwrap();
-        assert_eq!(state.robot, (2, 2));
+        assert_eq!(state.robot_position().unwrap(), (2, 2));
         state.step(directions[1]).unwrap();
-        assert_eq!(state.robot, (2, 1));
+        assert_eq!(state.robot_position().unwrap(), (2, 1));
         state.step(directions[2]).unwrap();
-        assert_eq!(state.robot, (2, 1));
+        assert_eq!(state.robot_position().unwrap(), (2, 1));
         state.step(directions[3]).unwrap();
-        assert_eq!(state.robot, (3, 1));
+        assert_eq!(state.robot_position().unwrap(), (3, 1));
         state.step(directions[4]).unwrap();
-        assert_eq!(state.robot, (4, 1));
+        assert_eq!(state.robot_position().unwrap(), (4, 1));
         state.step(directions[5]).unwrap();
-        assert_eq!(state.robot, (4, 1));
+        assert_eq!(state.robot_position().unwrap(), (4, 1));
         state.step(directions[6]).unwrap();
-        assert_eq!(state.robot, (4, 2));
+        assert_eq!(state.robot_position().unwrap(), (4, 2));
         state.step(directions[7]).unwrap();
-        assert_eq!(state.robot, (4, 2));
+        assert_eq!(state.robot_position().unwrap(), (4, 2));
     }
 
     #[test]
