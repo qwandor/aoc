@@ -1,12 +1,23 @@
-use eyre::{bail, OptionExt, Report};
+use eyre::{bail, eyre, OptionExt, Report};
 use std::io::{stdin, BufRead};
 use utils::{charvec, grid::Grid, Direction};
 
 fn main() -> Result<(), Report> {
     let (mut state, directions) = parse(stdin().lock())?;
-    state.run(&directions)?;
-    let box_gps_sum = state.box_gps_sum();
-    println!("Box GPS sum: {}", box_gps_sum);
+
+    {
+        let mut state = state.clone();
+        state.run(&directions)?;
+        let box_gps_sum = state.box_gps_sum();
+        println!("Box GPS sum: {}", box_gps_sum);
+    }
+
+    {
+        let mut scaled_state = state.scale_up()?;
+        scaled_state.run(&directions)?;
+        let box_gps_sum = scaled_state.box_gps_sum();
+        println!("Box GPS sum for scaled map: {}", box_gps_sum);
+    }
 
     Ok(())
 }
@@ -74,37 +85,97 @@ impl State {
     /// Moves the one robot one step in the given direction, if possible.
     fn step(&mut self, direction: Direction) -> Result<(), Report> {
         let robot_position = self.robot_position().ok_or_eyre("No robot")?;
-        self.push_box(robot_position, direction)?;
+        self.push_box(robot_position, direction, false)?;
         Ok(())
+    }
+
+    /// Attempts to push the small item at the given position in the given direction.
+    ///
+    /// This should only be called by `push_box`.
+    fn push_small(
+        &mut self,
+        position: (usize, usize),
+        direction: Direction,
+        c: char,
+        dry_run: bool,
+    ) -> Result<bool, Report> {
+        let Some(target_position) =
+            direction.move_from(position, self.map.width(), self.map.height())
+        else {
+            // Can't push off the edge of the map.
+            return Ok(false);
+        };
+        // Push whatever is in the target position first.
+        if self.push_box(target_position, direction, dry_run)? {
+            if !dry_run {
+                *self
+                    .map
+                    .get_mut(target_position.0, target_position.1)
+                    .unwrap() = c;
+                *self.map.get_mut(position.0, position.1).unwrap() = '.';
+            }
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     /// Attempts to push the box or robot (if any) at the given location in the given direction.
     ///
     /// Returns true if the box was pushed, or false if it couldn't be.
-    fn push_box(&mut self, position: (usize, usize), direction: Direction) -> Result<bool, Report> {
+    fn push_box(
+        &mut self,
+        position: (usize, usize),
+        direction: Direction,
+        dry_run: bool,
+    ) -> Result<bool, Report> {
         let c = *self.map.get(position.0, position.1).unwrap();
         match c {
             '#' => {
                 // Can't push a wall.
                 Ok(false)
             }
-            'O' | '@' => {
-                let Some(target_position) =
-                    direction.move_from(position, self.map.width(), self.map.height())
-                else {
-                    // Can't push off the edge of the map.
-                    return Ok(false);
-                };
-                // Push whatever is in the target position first.
-                if self.push_box(target_position, direction)? {
-                    *self
-                        .map
-                        .get_mut(target_position.0, target_position.1)
-                        .unwrap() = c;
-                    *self.map.get_mut(position.0, position.1).unwrap() = '.';
-                    Ok(true)
+            'O' | '@' => self.push_small(position, direction, c, dry_run),
+            '[' => {
+                if matches!(direction, Direction::Left | Direction::Right) {
+                    // Same as pushing a small box.
+                    self.push_small(position, direction, c, dry_run)
                 } else {
-                    Ok(false)
+                    // Check if both halves can be pushed before actually pushing them.
+                    let can_push = self.push_small(position, direction, c, true)?
+                        && self.push_small((position.0 + 1, position.1), direction, ']', true)?;
+                    if dry_run || !can_push {
+                        Ok(can_push)
+                    } else {
+                        Ok(self.push_small(position, direction, c, false)?
+                            && self.push_small(
+                                (position.0 + 1, position.1),
+                                direction,
+                                ']',
+                                false,
+                            )?)
+                    }
+                }
+            }
+            ']' => {
+                if matches!(direction, Direction::Left | Direction::Right) {
+                    // Same as pushing a small box.
+                    self.push_small(position, direction, c, dry_run)
+                } else {
+                    // Check if both halves can be pushed before actually pushing them.
+                    let can_push = self.push_small(position, direction, c, true)?
+                        && self.push_small((position.0 - 1, position.1), direction, '[', true)?;
+                    if dry_run || !can_push {
+                        Ok(can_push)
+                    } else {
+                        Ok(self.push_small(position, direction, c, false)?
+                            && self.push_small(
+                                (position.0 - 1, position.1),
+                                direction,
+                                '[',
+                                false,
+                            )?)
+                    }
                 }
             }
             '.' => {
@@ -119,8 +190,39 @@ impl State {
     fn box_gps_sum(&self) -> usize {
         self.map
             .elements()
-            .map(|(x, y, e)| if *e == 'O' { x + 100 * y } else { 0 })
+            .map(|(x, y, e)| {
+                if matches!(*e, 'O' | '[') {
+                    x + 100 * y
+                } else {
+                    0
+                }
+            })
             .sum()
+    }
+
+    fn scale_up(self) -> Result<Self, Report> {
+        let scaled_map = self
+            .map
+            .rows()
+            .map(|row| {
+                Ok(row
+                    .iter()
+                    .map(|c| match c {
+                        '#' => Ok(['#', '#']),
+                        'O' => Ok(['[', ']']),
+                        '.' => Ok(['.', '.']),
+                        '@' => Ok(['@', '.']),
+                        _ => Err(eyre!("Invalid character '{}'", c)),
+                    })
+                    .collect::<Result<Vec<_>, Report>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect())
+            })
+            .collect::<Result<Vec<_>, Report>>()?
+            .try_into()
+            .unwrap();
+        Ok(Self { map: scaled_map })
     }
 }
 
@@ -272,5 +374,39 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
         .unwrap();
         state.run(&directions).unwrap();
         assert_eq!(state.box_gps_sum(), 10092);
+    }
+
+    #[test]
+    fn run_scaled_example() {
+        let (state, directions) = parse(
+            "\
+##########
+#..O..O.O#
+#......O.#
+#.OO..O.O#
+#..O@..O.#
+#O#..O...#
+#O..O..O.#
+#.OO.O.OO#
+#....O...#
+##########
+
+<vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
+vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
+><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
+<<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
+^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
+^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
+>^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
+<><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
+^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
+v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
+"
+            .as_bytes(),
+        )
+        .unwrap();
+        let mut state = state.scale_up().unwrap();
+        state.run(&directions).unwrap();
+        assert_eq!(state.box_gps_sum(), 9021);
     }
 }
