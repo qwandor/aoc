@@ -69,6 +69,15 @@ impl<T> Grid<T> {
             .enumerate()
             .map(|(i, e)| (i % self.width, i / self.width, e))
     }
+
+    /// Returns an iterator over mutable references to all elements in the grid, along with their
+    /// co-ordinates.
+    pub fn elements_mut(&mut self) -> impl Iterator<Item = (usize, usize, &mut T)> {
+        self.elements
+            .iter_mut()
+            .enumerate()
+            .map(|(i, e)| (i % self.width, i / self.width, e))
+    }
 }
 
 impl<T: Copy> Grid<T> {
