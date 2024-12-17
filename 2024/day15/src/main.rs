@@ -3,7 +3,7 @@ use std::io::{stdin, BufRead};
 use utils::{charvec, grid::Grid, Direction};
 
 fn main() -> Result<(), Report> {
-    let (mut state, directions) = parse(stdin().lock())?;
+    let (state, directions) = parse(stdin().lock())?;
 
     {
         let mut state = state.clone();
