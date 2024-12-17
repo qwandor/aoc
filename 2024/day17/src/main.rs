@@ -22,8 +22,25 @@ fn main() -> Result<(), Report> {
             .collect::<Vec<_>>()
             .join(",")
     );
+    let a = find_quine(&program)?;
+    println!("Register A must be {} for quine.", a);
 
     Ok(())
+}
+
+/// Finds the lowest value for register A which makes the given program produce a copy of itself.
+fn find_quine(program: &[u8]) -> Result<u64, Report> {
+    for a in 0.. {
+        let mut registers = [a, 0, 0];
+        let res = run(&mut registers, program)?;
+        if a % 100000 == 0 {
+            println!("{} => {:?} ({})", a, res, res.len());
+        }
+        if res == program {
+            return Ok(a);
+        }
+    }
+    bail!("No quine found.");
 }
 
 fn parse(input: &str) -> Result<([u64; 3], Vec<u8>), Report> {
@@ -48,7 +65,7 @@ fn parse(input: &str) -> Result<([u64; 3], Vec<u8>), Report> {
     Ok((registers, program))
 }
 
-fn run(registers: &mut [u64; 3], program: &[u8]) -> Result<Vec<u64>, Report> {
+fn run(registers: &mut [u64; 3], program: &[u8]) -> Result<Vec<u8>, Report> {
     let mut output = Vec::new();
     let mut pc = 0;
 
@@ -76,7 +93,7 @@ fn run(registers: &mut [u64; 3], program: &[u8]) -> Result<Vec<u64>, Report> {
                 registers[1] ^= registers[2];
             }
             OUT => {
-                output.push(get_combo(registers, operand)? & 0b111);
+                output.push((get_combo(registers, operand)? & 0b111) as u8);
             }
             BDV => {
                 registers[1] = registers[0] / 2u64.pow(get_combo(registers, operand)?.try_into()?);
@@ -128,5 +145,10 @@ Program: 0,1,5,4,3,0
             run(&mut registers, &program).unwrap(),
             vec![4, 6, 3, 5, 6, 3, 5, 2, 1, 0]
         );
+    }
+
+    #[test]
+    fn find_quine_example() {
+        assert_eq!(find_quine(&[0, 3, 5, 4, 3, 0]).unwrap(), 117440);
     }
 }
