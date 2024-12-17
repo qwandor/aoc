@@ -37,7 +37,7 @@ fn disasm(program: &[u8]) {
         print!("{:2}: ", i * 2);
         match *instruction {
             ADV => {
-                println!("ADV {}: A /= 2**{}", operand, disasm_combo(*operand));
+                println!("ADV {}: A >>= {}", operand, disasm_combo(*operand));
             }
             BXL => {
                 println!("BXL {}: B ^= {}", operand, operand);
@@ -55,10 +55,10 @@ fn disasm(program: &[u8]) {
                 println!("OUT {}: {} & 0b111", operand, disasm_combo(*operand));
             }
             BDV => {
-                println!("BDV {}: B = A / 2**{}", operand, disasm_combo(*operand));
+                println!("BDV {}: B = A >> {}", operand, disasm_combo(*operand));
             }
             CDV => {
-                println!("CDV {}: C = A / 2**{}", operand, disasm_combo(*operand));
+                println!("CDV {}: C = A >> {}", operand, disasm_combo(*operand));
             }
             _ => {
                 println!("Invalid instruction {}", instruction);
@@ -157,7 +157,7 @@ fn step(
 
     match instruction {
         ADV => {
-            registers[0] /= 2u64.pow(get_combo(registers, operand)?.try_into()?);
+            registers[0] >>= get_combo(registers, operand)?;
         }
         BXL => {
             registers[1] ^= u64::from(operand);
@@ -178,10 +178,10 @@ fn step(
             output.push((get_combo(registers, operand)? & 0b111) as u8);
         }
         BDV => {
-            registers[1] = registers[0] / 2u64.pow(get_combo(registers, operand)?.try_into()?);
+            registers[1] = registers[0] >> get_combo(registers, operand)?;
         }
         CDV => {
-            registers[2] = registers[0] / 2u64.pow(get_combo(registers, operand)?.try_into()?);
+            registers[2] = registers[0] >> get_combo(registers, operand)?;
         }
         _ => {
             bail!("Invalid instruction {}", instruction);
