@@ -36,6 +36,15 @@ impl Direction {
         }
     }
 
+    pub fn rotate_anticlockwise(self) -> Self {
+        match self {
+            Self::Up => Self::Left,
+            Self::Right => Self::Up,
+            Self::Down => Self::Right,
+            Self::Left => Self::Down,
+        }
+    }
+
     pub fn move_from(
         self,
         position: (usize, usize),
