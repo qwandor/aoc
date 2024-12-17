@@ -22,10 +22,64 @@ fn main() -> Result<(), Report> {
             .collect::<Vec<_>>()
             .join(",")
     );
+    disasm(&program);
     let a = find_quine(&program)?;
     println!("Register A must be {} for quine.", a);
 
     Ok(())
+}
+
+fn disasm(program: &[u8]) {
+    for (i, window) in program.chunks(2).enumerate() {
+        let [instruction, operand] = window else {
+            unreachable!();
+        };
+        print!("{:2}: ", i * 2);
+        match *instruction {
+            ADV => {
+                println!("ADV {}: A /= 2**{}", operand, disasm_combo(*operand));
+            }
+            BXL => {
+                println!("BXL {}: B ^= {}", operand, operand);
+            }
+            BST => {
+                println!("BST {}: B = {} & 0b111", operand, disasm_combo(*operand));
+            }
+            JNZ => {
+                println!("JNZ {}", operand);
+            }
+            BXC => {
+                println!("BXC {}: B ^= C", operand);
+            }
+            OUT => {
+                println!("OUT {}: {} & 0b111", operand, disasm_combo(*operand));
+            }
+            BDV => {
+                println!("BDV {}: B = A / 2**{}", operand, disasm_combo(*operand));
+            }
+            CDV => {
+                println!("CDV {}: C = A / 2**{}", operand, disasm_combo(*operand));
+            }
+            _ => {
+                println!("Invalid instruction {}", instruction);
+            }
+        }
+    }
+}
+
+fn disasm_combo(combo_operand: u8) -> String {
+    match combo_operand {
+        4 => "A".to_string(),
+        5 => "B".to_string(),
+        6 => "C".to_string(),
+        _ => {
+            if combo_operand < 4 {
+                format!("{}", combo_operand)
+            } else {
+                format!("Invalid combo operand {}", combo_operand)
+            }
+        }
+    }
 }
 
 /// Finds the lowest value for register A which makes the given program produce a copy of itself.
