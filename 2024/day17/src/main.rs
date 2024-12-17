@@ -85,16 +85,32 @@ fn disasm_combo(combo_operand: u8) -> String {
 /// Finds the lowest value for register A which makes the given program produce a copy of itself.
 fn find_quine(program: &[u8]) -> Result<u64, Report> {
     for a in 0.. {
-        let mut registers = [a, 0, 0];
-        let res = run(&mut registers, program)?;
-        if a % 100000 == 0 {
-            println!("{} => {:?} ({})", a, res, res.len());
+        if a % 1000000 == 0 {
+            println!("{}", a);
         }
-        if res == program {
+        if produces_output([a, 0, 0], program, program)? {
             return Ok(a);
         }
     }
     bail!("No quine found.");
+}
+
+fn produces_output(
+    mut registers: [u64; 3],
+    program: &[u8],
+    expected_output: &[u8],
+) -> Result<bool, Report> {
+    let mut output = Vec::new();
+    let mut pc = 0;
+
+    while pc + 1 < program.len() {
+        step(&mut registers, program, &mut output, &mut pc)?;
+        if output.len() > expected_output.len() || output != expected_output[..output.len()] {
+            return Ok(false);
+        }
+    }
+
+    Ok(output == expected_output)
 }
 
 fn parse(input: &str) -> Result<([u64; 3], Vec<u8>), Report> {
@@ -124,45 +140,56 @@ fn run(registers: &mut [u64; 3], program: &[u8]) -> Result<Vec<u8>, Report> {
     let mut pc = 0;
 
     while pc + 1 < program.len() {
-        let instruction = program[pc];
-        let operand = program[pc + 1];
-
-        match instruction {
-            ADV => {
-                registers[0] /= 2u64.pow(get_combo(registers, operand)?.try_into()?);
-            }
-            BXL => {
-                registers[1] ^= u64::from(operand);
-            }
-            BST => {
-                registers[1] = get_combo(registers, operand)? & 0b111;
-            }
-            JNZ => {
-                if registers[0] != 0 {
-                    pc = operand.into();
-                    continue;
-                }
-            }
-            BXC => {
-                registers[1] ^= registers[2];
-            }
-            OUT => {
-                output.push((get_combo(registers, operand)? & 0b111) as u8);
-            }
-            BDV => {
-                registers[1] = registers[0] / 2u64.pow(get_combo(registers, operand)?.try_into()?);
-            }
-            CDV => {
-                registers[2] = registers[0] / 2u64.pow(get_combo(registers, operand)?.try_into()?);
-            }
-            _ => {
-                bail!("Invalid instruction {}", instruction);
-            }
-        }
-        pc += 2;
+        step(registers, program, &mut output, &mut pc)?;
     }
 
     Ok(output)
+}
+
+fn step(
+    registers: &mut [u64; 3],
+    program: &[u8],
+    output: &mut Vec<u8>,
+    pc: &mut usize,
+) -> Result<(), Report> {
+    let instruction = program[*pc];
+    let operand = program[*pc + 1];
+
+    match instruction {
+        ADV => {
+            registers[0] /= 2u64.pow(get_combo(registers, operand)?.try_into()?);
+        }
+        BXL => {
+            registers[1] ^= u64::from(operand);
+        }
+        BST => {
+            registers[1] = get_combo(registers, operand)? & 0b111;
+        }
+        JNZ => {
+            if registers[0] != 0 {
+                *pc = operand.into();
+                return Ok(());
+            }
+        }
+        BXC => {
+            registers[1] ^= registers[2];
+        }
+        OUT => {
+            output.push((get_combo(registers, operand)? & 0b111) as u8);
+        }
+        BDV => {
+            registers[1] = registers[0] / 2u64.pow(get_combo(registers, operand)?.try_into()?);
+        }
+        CDV => {
+            registers[2] = registers[0] / 2u64.pow(get_combo(registers, operand)?.try_into()?);
+        }
+        _ => {
+            bail!("Invalid instruction {}", instruction);
+        }
+    }
+    *pc += 2;
+
+    Ok(())
 }
 
 fn get_combo(registers: &[u64; 3], combo_operand: u8) -> Result<u64, Report> {
