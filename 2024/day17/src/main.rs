@@ -23,7 +23,7 @@ fn main() -> Result<(), Report> {
             .join(",")
     );
     disasm(&program);
-    let a = find_quine(&program)?;
+    let a = find_quine(&program, &program, 0)?.ok_or_eyre("No solution found")?;
     println!("Register A must be {} for quine.", a);
 
     Ok(())
@@ -82,35 +82,24 @@ fn disasm_combo(combo_operand: u8) -> String {
     }
 }
 
-/// Finds the lowest value for register A which makes the given program produce a copy of itself.
-fn find_quine(program: &[u8]) -> Result<u64, Report> {
-    for a in 0.. {
-        if a % 1000000 == 0 {
-            println!("{}", a);
-        }
-        if produces_output([a, 0, 0], program, program)? {
-            return Ok(a);
-        }
-    }
-    bail!("No quine found.");
-}
-
-fn produces_output(
-    mut registers: [u64; 3],
-    program: &[u8],
-    expected_output: &[u8],
-) -> Result<bool, Report> {
-    let mut output = Vec::new();
-    let mut pc = 0;
-
-    while pc + 1 < program.len() {
-        step(&mut registers, program, &mut output, &mut pc)?;
-        if output.len() > expected_output.len() || output != expected_output[..output.len()] {
-            return Ok(false);
+/// Returns a value of A which will result in the given program producing the given output.
+fn find_quine(program: &[u8], expected: &[u8], start_a: u64) -> Result<Option<u64>, Report> {
+    for i in 0..8 {
+        let a = start_a << 3 | i;
+        let mut registers = [a, 0, 0];
+        let output = run(&mut registers, program)?;
+        if output == expected {
+            return Ok(Some(a));
+        } else if output.len() > expected.len() {
+            return Ok(None);
+        } else if output == expected[expected.len() - output.len()..] && a != start_a {
+            if let Some(solution) = find_quine(expected, expected, a)? {
+                return Ok(Some(solution));
+            }
         }
     }
 
-    Ok(output == expected_output)
+    Ok(None)
 }
 
 fn parse(input: &str) -> Result<([u64; 3], Vec<u8>), Report> {
@@ -230,6 +219,7 @@ Program: 0,1,5,4,3,0
 
     #[test]
     fn find_quine_example() {
-        assert_eq!(find_quine(&[0, 3, 5, 4, 3, 0]).unwrap(), 117440);
+        let program = [0, 3, 5, 4, 3, 0];
+        assert_eq!(find_quine(&program, &program, 0).unwrap(), Some(117440));
     }
 }
