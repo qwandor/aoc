@@ -1,5 +1,8 @@
 use eyre::{bail, OptionExt, Report};
-use std::io::{stdin, BufRead};
+use std::{
+    collections::HashMap,
+    io::{stdin, BufRead},
+};
 
 fn main() -> Result<(), Report> {
     let (towels, designs) = parse(stdin().lock())?;
@@ -27,24 +30,29 @@ fn parse(input: impl BufRead) -> Result<(Vec<String>, Vec<String>), Report> {
 }
 
 fn count_possible_designs(towels: &[String], designs: &[String]) -> usize {
+    let mut cache = HashMap::new();
     designs
         .iter()
-        .filter(|design| is_design_possible(&towels, dbg!(design)))
+        .filter(|design| is_design_possible(&towels, design, &mut cache))
         .count()
 }
 
 /// Returns whether it is possible to make the given design from the given towels.
-fn is_design_possible(towels: &[String], design: &str) -> bool {
+fn is_design_possible(towels: &[String], design: &str, cache: &mut HashMap<String, bool>) -> bool {
     if design.is_empty() {
         return true;
+    } else if let Some(possible) = cache.get(design) {
+        return *possible;
     }
     for towel in towels {
         if let Some(remainder) = design.strip_prefix(towel) {
-            if is_design_possible(towels, remainder) {
+            if is_design_possible(towels, remainder, cache) {
+                cache.insert(design.to_owned(), true);
                 return true;
             }
         }
     }
+    cache.insert(design.to_owned(), false);
     false
 }
 
