@@ -1,6 +1,7 @@
 use eyre::{bail, OptionExt, Report};
 use std::{
-    collections::HashMap,
+    cmp::min,
+    collections::{HashMap, HashSet},
     io::{stdin, BufRead},
 };
 
@@ -12,7 +13,7 @@ fn main() -> Result<(), Report> {
     Ok(())
 }
 
-fn parse(input: impl BufRead) -> Result<(Vec<String>, Vec<String>), Report> {
+fn parse(input: impl BufRead) -> Result<(HashSet<String>, Vec<String>), Report> {
     let mut lines = input.lines();
     let towels = lines
         .next()
@@ -29,27 +30,35 @@ fn parse(input: impl BufRead) -> Result<(Vec<String>, Vec<String>), Report> {
     Ok((towels, designs))
 }
 
-fn count_possible_designs(towels: &[String], designs: &[String]) -> usize {
+fn count_possible_designs(towels: &HashSet<String>, designs: &[String]) -> usize {
+    let Some(max_towel_size) = towels.iter().map(|towel| towel.len()).max() else {
+        return 0;
+    };
     let mut cache = HashMap::new();
     designs
         .iter()
-        .filter(|design| is_design_possible(&towels, design, &mut cache))
+        .filter(|design| is_design_possible(towels, max_towel_size, design, &mut cache))
         .count()
 }
 
 /// Returns whether it is possible to make the given design from the given towels.
-fn is_design_possible(towels: &[String], design: &str, cache: &mut HashMap<String, bool>) -> bool {
+fn is_design_possible(
+    towels: &HashSet<String>,
+    max_towel_size: usize,
+    design: &str,
+    cache: &mut HashMap<String, bool>,
+) -> bool {
     if design.is_empty() {
         return true;
     } else if let Some(possible) = cache.get(design) {
         return *possible;
     }
-    for towel in towels {
-        if let Some(remainder) = design.strip_prefix(towel) {
-            if is_design_possible(towels, remainder, cache) {
-                cache.insert(design.to_owned(), true);
-                return true;
-            }
+    for prefix_len in 1..=min(max_towel_size, design.len()) {
+        if towels.contains(&design[..prefix_len])
+            && is_design_possible(towels, max_towel_size, &design[prefix_len..], cache)
+        {
+            cache.insert(design.to_owned(), true);
+            return true;
         }
     }
     cache.insert(design.to_owned(), false);
@@ -80,7 +89,7 @@ bbrgwb
         .unwrap();
         assert_eq!(
             towels,
-            vec![
+            [
                 "r".to_string(),
                 "wr".to_string(),
                 "b".to_string(),
@@ -90,6 +99,8 @@ bbrgwb
                 "gb".to_string(),
                 "br".to_string(),
             ]
+            .into_iter()
+            .collect()
         );
         assert_eq!(
             designs,
