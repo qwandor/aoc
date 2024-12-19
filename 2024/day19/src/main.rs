@@ -7,8 +7,13 @@ use std::{
 
 fn main() -> Result<(), Report> {
     let (towels, designs) = parse(stdin().lock())?;
-    let possible_design_count = count_possible_designs(&towels, &designs);
+    let all_arrangements = count_all_arrangements(&towels, &designs);
+    let possible_design_count = all_arrangements.iter().filter(|count| **count > 0).count();
     println!("{} designs are possible.", possible_design_count);
+    println!(
+        "{} different arrangements are possible across all designs.",
+        all_arrangements.iter().sum::<usize>()
+    );
 
     Ok(())
 }
@@ -30,39 +35,41 @@ fn parse(input: impl BufRead) -> Result<(HashSet<String>, Vec<String>), Report> 
     Ok((towels, designs))
 }
 
-fn count_possible_designs(towels: &HashSet<String>, designs: &[String]) -> usize {
+/// Returns how many different ways each design is possible.
+fn count_all_arrangements(towels: &HashSet<String>, designs: &[String]) -> Vec<usize> {
     let Some(max_towel_size) = towels.iter().map(|towel| towel.len()).max() else {
-        return 0;
+        return vec![0; designs.len()];
     };
     let mut cache = HashMap::new();
     designs
         .iter()
-        .filter(|design| is_design_possible(towels, max_towel_size, design, &mut cache))
-        .count()
+        .map(|design| count_possible_arrangements(towels, max_towel_size, design, &mut cache))
+        .collect()
 }
 
-/// Returns whether it is possible to make the given design from the given towels.
-fn is_design_possible(
+/// Returns the number of ways it is possible to make the given design from the given towels.
+fn count_possible_arrangements(
     towels: &HashSet<String>,
     max_towel_size: usize,
     design: &str,
-    cache: &mut HashMap<String, bool>,
-) -> bool {
+    cache: &mut HashMap<String, usize>,
+) -> usize {
     if design.is_empty() {
-        return true;
+        return 1;
     } else if let Some(possible) = cache.get(design) {
         return *possible;
     }
-    for prefix_len in 1..=min(max_towel_size, design.len()) {
-        if towels.contains(&design[..prefix_len])
-            && is_design_possible(towels, max_towel_size, &design[prefix_len..], cache)
-        {
-            cache.insert(design.to_owned(), true);
-            return true;
-        }
-    }
-    cache.insert(design.to_owned(), false);
-    false
+    let possible_arrangement_count = (1..=min(max_towel_size, design.len()))
+        .map(|prefix_len| {
+            if towels.contains(&design[..prefix_len]) {
+                count_possible_arrangements(towels, max_towel_size, &design[prefix_len..], cache)
+            } else {
+                0
+            }
+        })
+        .sum();
+    cache.insert(design.to_owned(), possible_arrangement_count);
+    possible_arrangement_count
 }
 
 #[cfg(test)]
@@ -115,6 +122,9 @@ bbrgwb
                 "bbrgwb".to_string(),
             ]
         );
-        assert_eq!(count_possible_designs(&towels, &designs), 6);
+        assert_eq!(
+            count_all_arrangements(&towels, &designs),
+            vec![2, 1, 4, 6, 0, 1, 2, 0]
+        );
     }
 }
