@@ -30,9 +30,9 @@ fn main() -> Result<(), Report> {
 }
 
 fn next_secret_number(number: u64) -> u64 {
-    let a = (number ^ (number * 64)) % 16777216;
-    let b = (a ^ (a / 32)) % 16777216;
-    (b ^ (b * 2048)) % 16777216
+    let a = (number ^ (number << 6)) & 0xffffff;
+    let b = (a ^ (a >> 5)) & 0xffffff;
+    (b ^ (b << 11)) & 0xffffff
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
