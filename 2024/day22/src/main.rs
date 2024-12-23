@@ -1,4 +1,4 @@
-use std::io::stdin;
+use std::{collections::HashMap, io::stdin};
 
 use eyre::Report;
 
@@ -19,8 +19,7 @@ fn main() -> Result<(), Report> {
         .sum::<u64>();
     println!("Sum of 2000th secret numbers: {}", sum_2000th);
 
-    let best_sequence = find_best_sequence(&buyer_initial_numbers);
-    let best_sequence_profit = total_profit_for_sequence(&buyer_initial_numbers, &best_sequence);
+    let (best_sequence, best_sequence_profit) = find_best_sequence(&buyer_initial_numbers);
     println!(
         "Best sequence is {:?}, for {} bananas",
         best_sequence, best_sequence_profit
@@ -57,7 +56,9 @@ fn changes(prices: &[u64]) -> Vec<i64> {
         .collect()
 }
 
-fn profit_for_sequence(initial_number: u64, sequence: &[i64; 4]) -> u64 {
+/// Given an initial number for a buyer, returns a map giving the price for all possible sequences
+/// of changes.
+fn prices_by_sequence(initial_number: u64) -> HashMap<[i64; 4], u64> {
     let prices = SecretNumberIterator {
         next: initial_number,
     }
@@ -66,47 +67,47 @@ fn profit_for_sequence(initial_number: u64, sequence: &[i64; 4]) -> u64 {
     .collect::<Vec<_>>();
     prices
         .windows(5)
-        .filter_map(|prices| {
-            if changes(prices) == sequence {
-                Some(*prices.last().unwrap())
-            } else {
-                None
-            }
-        })
-        .max()
-        .unwrap_or_default()
+        .map(|prices| (changes(prices).try_into().unwrap(), *prices.last().unwrap()))
+        .collect()
 }
 
 /// Returns the total number of bananas that would be gained by giving the negotating monkey the
 /// given sequence of changes.
-fn total_profit_for_sequence(initial_numbers: &[u64], sequence: &[i64; 4]) -> u64 {
-    initial_numbers
+fn total_profit_for_sequence(
+    all_sequence_prices: &[HashMap<[i64; 4], u64>],
+    sequence: &[i64; 4],
+) -> u64 {
+    all_sequence_prices
         .iter()
-        .map(|initial_number| profit_for_sequence(*initial_number, sequence))
+        .map(|sequence_prices| sequence_prices.get(sequence).copied().unwrap_or_default())
         .sum()
 }
 
 /// Finds the best sequence of changes to tell the monkey for the given set of initial buyer secret
 /// numbers.
-fn find_best_sequence(initial_numbers: &[u64]) -> [i64; 4] {
+fn find_best_sequence(initial_numbers: &[u64]) -> ([i64; 4], u64) {
+    let all_sequence_prices = initial_numbers
+        .iter()
+        .map(|initial_number| prices_by_sequence(*initial_number))
+        .collect::<Vec<_>>();
     let mut best_sequence = [0; 4];
     let mut best_profit = 0;
     for a in -9..9 {
         for b in -9..9 {
             println!("Trying {}, {}, ...", a, b);
             for c in -9..9 {
-                println!("Trying {}, {}, {}, ...", a, b, c);
                 for d in -9..9 {
-                    let profit = total_profit_for_sequence(initial_numbers, &[a, b, c, d]);
+                    let sequence = [a, b, c, d];
+                    let profit = total_profit_for_sequence(&all_sequence_prices, &sequence);
                     if profit > best_profit {
-                        best_sequence = [a, b, c, d];
+                        best_sequence = sequence;
                         best_profit = profit;
                     }
                 }
             }
         }
     }
-    best_sequence
+    (best_sequence, best_profit)
 }
 
 #[cfg(test)]
@@ -155,15 +156,14 @@ mod tests {
 
     #[test]
     fn example_sequence_profit() {
-        assert_eq!(profit_for_sequence(1, &[-2, 1, -1, 3]), 7);
-        assert_eq!(profit_for_sequence(2, &[-2, 1, -1, 3]), 7);
-        assert_eq!(profit_for_sequence(3, &[-2, 1, -1, 3]), 0);
-        assert_eq!(profit_for_sequence(2024, &[-2, 1, -1, 3]), 9);
+        assert_eq!(*prices_by_sequence(1).get(&[-2, 1, -1, 3]).unwrap(), 7);
+        assert_eq!(*prices_by_sequence(2).get(&[-2, 1, -1, 3]).unwrap(), 7);
+        assert_eq!(prices_by_sequence(3).get(&[-2, 1, -1, 3]), None);
+        assert_eq!(*prices_by_sequence(2024).get(&[-2, 1, -1, 3]).unwrap(), 9);
     }
 
     #[test]
-    #[ignore] // Long test, so skip by default.
     fn best_sequence_example() {
-        assert_eq!(find_best_sequence(&[1, 2, 3, 2024]), [-2, 1, -1, 3]);
+        assert_eq!(find_best_sequence(&[1, 2, 3, 2024]), ([-2, 1, -1, 3], 23));
     }
 }
