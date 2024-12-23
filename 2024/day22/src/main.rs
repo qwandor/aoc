@@ -94,7 +94,7 @@ fn find_best_sequence(initial_numbers: &[u64]) -> ([i64; 4], u64) {
     let mut best_profit = 0;
     for a in -9..9 {
         for b in -9..9 {
-            println!("Trying {}, {}, ...", a, b);
+            println!("Trying {}, {}, ... (best so far {})", a, b, best_profit);
             for c in -9..9 {
                 for d in -9..9 {
                     let sequence = [a, b, c, d];
