@@ -1,6 +1,5 @@
-use std::{collections::HashMap, io::stdin};
-
 use eyre::Report;
+use std::{collections::HashMap, io::stdin};
 
 fn main() -> Result<(), Report> {
     let buyer_initial_numbers = stdin()
@@ -56,7 +55,7 @@ fn changes(prices: &[u64]) -> Vec<i64> {
         .collect()
 }
 
-/// Given an initial number for a buyer, returns a map giving the price for all possible sequences
+/// Given an initial number for a buyer, returns a map giving the price for each possible sequence
 /// of changes.
 fn prices_by_sequence(initial_number: u64) -> HashMap<[i64; 4], u64> {
     let prices = SecretNumberIterator {
