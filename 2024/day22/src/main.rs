@@ -64,10 +64,15 @@ fn prices_by_sequence(initial_number: u64) -> HashMap<[i64; 4], u64> {
     .take(2001)
     .map(|number| number % 10)
     .collect::<Vec<_>>();
-    prices
-        .windows(5)
-        .map(|prices| (changes(prices).try_into().unwrap(), *prices.last().unwrap()))
-        .collect()
+    let mut sequence_prices = HashMap::new();
+    for prices in prices.windows(5) {
+        // Only the first time the sequence occurs matters, so if it happens again later on we
+        // should ignore it.
+        sequence_prices
+            .entry(changes(prices).try_into().unwrap())
+            .or_insert(*prices.last().unwrap());
+    }
+    sequence_prices
 }
 
 /// Returns the total number of bananas that would be gained by giving the negotating monkey the
