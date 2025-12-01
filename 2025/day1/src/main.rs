@@ -54,10 +54,10 @@ fn count_click_zeros(start: i64, rotations: &[i64]) -> u64 {
 fn count_single_rotation_zeros(start: i64, rotation: i64) -> u64 {
     let end = start + rotation;
     (end.abs() / 100
-        + if (start == 0 && end != 0) || end > 0 {
-            0
-        } else {
+        + if end == 0 || (start > 0 && end <= 0) {
             1
+        } else {
+            0
         }) as u64
 }
 
