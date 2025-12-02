@@ -33,6 +33,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "aoc-2025-day2"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
 name = "day1"
 version = "0.1.0"
 
