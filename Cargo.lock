@@ -12,6 +12,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "aoc-2022-day1"
+version = "0.1.0"
+
+[[package]]
+name = "aoc-2022-day2"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
 name = "aoc-2024-day1"
 version = "0.1.0"
 dependencies = [
@@ -19,7 +30,138 @@ dependencies = [
 ]
 
 [[package]]
+name = "aoc-2024-day10"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "utils",
+]
+
+[[package]]
+name = "aoc-2024-day11"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "aoc-2024-day12"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "utils",
+]
+
+[[package]]
+name = "aoc-2024-day13"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "regex",
+]
+
+[[package]]
+name = "aoc-2024-day14"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "regex",
+ "utils",
+]
+
+[[package]]
+name = "aoc-2024-day15"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "utils",
+]
+
+[[package]]
+name = "aoc-2024-day16"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "utils",
+]
+
+[[package]]
+name = "aoc-2024-day17"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "regex",
+]
+
+[[package]]
+name = "aoc-2024-day19"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
 name = "aoc-2024-day2"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "aoc-2024-day22"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "aoc-2024-day3"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "regex",
+]
+
+[[package]]
+name = "aoc-2024-day4"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "utils",
+]
+
+[[package]]
+name = "aoc-2024-day5"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "aoc-2024-day6"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "utils",
+]
+
+[[package]]
+name = "aoc-2024-day7"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+]
+
+[[package]]
+name = "aoc-2024-day8"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "utils",
+]
+
+[[package]]
+name = "aoc-2024-day9"
 version = "0.1.0"
 dependencies = [
  "eyre",
@@ -41,148 +183,6 @@ dependencies = [
 
 [[package]]
 name = "aoc-2025-day3"
-version = "0.1.0"
-dependencies = [
- "eyre",
-]
-
-[[package]]
-name = "day1"
-version = "0.1.0"
-
-[[package]]
-name = "day10"
-version = "0.1.0"
-dependencies = [
- "eyre",
- "utils",
-]
-
-[[package]]
-name = "day11"
-version = "0.1.0"
-dependencies = [
- "eyre",
-]
-
-[[package]]
-name = "day12"
-version = "0.1.0"
-dependencies = [
- "eyre",
- "utils",
-]
-
-[[package]]
-name = "day13"
-version = "0.1.0"
-dependencies = [
- "eyre",
- "regex",
-]
-
-[[package]]
-name = "day14"
-version = "0.1.0"
-dependencies = [
- "eyre",
- "regex",
- "utils",
-]
-
-[[package]]
-name = "day15"
-version = "0.1.0"
-dependencies = [
- "eyre",
- "utils",
-]
-
-[[package]]
-name = "day16"
-version = "0.1.0"
-dependencies = [
- "eyre",
- "utils",
-]
-
-[[package]]
-name = "day17"
-version = "0.1.0"
-dependencies = [
- "eyre",
- "regex",
-]
-
-[[package]]
-name = "day19"
-version = "0.1.0"
-dependencies = [
- "eyre",
-]
-
-[[package]]
-name = "day2"
-version = "0.1.0"
-dependencies = [
- "eyre",
-]
-
-[[package]]
-name = "day22"
-version = "0.1.0"
-dependencies = [
- "eyre",
-]
-
-[[package]]
-name = "day3"
-version = "0.1.0"
-dependencies = [
- "eyre",
- "regex",
-]
-
-[[package]]
-name = "day4"
-version = "0.1.0"
-dependencies = [
- "eyre",
- "utils",
-]
-
-[[package]]
-name = "day5"
-version = "0.1.0"
-dependencies = [
- "eyre",
-]
-
-[[package]]
-name = "day6"
-version = "0.1.0"
-dependencies = [
- "eyre",
- "utils",
-]
-
-[[package]]
-name = "day7"
-version = "0.1.0"
-dependencies = [
- "eyre",
-]
-
-[[package]]
-name = "day8"
-version = "0.1.0"
-dependencies = [
- "eyre",
- "utils",
-]
-
-[[package]]
-name = "day9"
 version = "0.1.0"
 dependencies = [
  "eyre",
