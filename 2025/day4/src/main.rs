@@ -1,20 +1,24 @@
 use eyre::Report;
-use std::io::stdin;
+use std::io::{BufRead, stdin};
 use utils::{grid::Grid, parse_chargrid};
 
 fn main() -> Result<(), Report> {
-    let grid = parse_chargrid(stdin().lock())?;
+    let grid = parse(stdin().lock())?;
 
     println!("Accessible rolls: {}", count_accessible(&grid));
 
     Ok(())
 }
 
+fn parse(input: impl BufRead) -> Result<Grid<bool>, Report> {
+    Ok(parse_chargrid(input)?.map(|&entry| entry == '@'))
+}
+
 /// Returns the number of rolls of paper with fewer than four adjacent rolls.
-fn count_accessible(grid: &Grid<char>) -> usize {
+fn count_accessible(grid: &Grid<bool>) -> usize {
     grid.elements()
         .filter(|&(x, y, &value)| {
-            value == '@'
+            value
                 && [
                     (-1, -1),
                     (-1, 0),
@@ -33,7 +37,7 @@ fn count_accessible(grid: &Grid<char>) -> usize {
                     let Some(adjacent_y) = y.checked_add_signed(y_off) else {
                         return false;
                     };
-                    grid.get(adjacent_x, adjacent_y) == Some(&'@')
+                    grid.get(adjacent_x, adjacent_y) == Some(&true)
                 })
                 .count()
                     < 4
@@ -47,7 +51,7 @@ mod tests {
 
     #[test]
     fn example() {
-        let grid = parse_chargrid(
+        let grid = parse(
             "\
 ..@@.@@@@.
 @@@.@.@.@@
