@@ -1,4 +1,4 @@
-use eyre::{bail, Report};
+use eyre::{Report, bail};
 use std::{
     fmt::{self, Debug, Formatter},
     iter::repeat_with,
