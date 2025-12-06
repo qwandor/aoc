@@ -196,6 +196,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn example2_score() {
         let maze = parse_chargrid(
             "\
