@@ -80,10 +80,10 @@ impl<T> Grid<T> {
     }
 }
 
-impl<T: Copy> Grid<T> {
+impl<T: Clone> Grid<T> {
     /// Returns an iterator over columns of the grid.
     pub fn columns(&self) -> impl Iterator<Item = Vec<T>> + '_ {
-        (0..self.width).map(|x| self.rows().map(|row| row[x]).collect::<Vec<_>>())
+        (0..self.width).map(|x| self.rows().map(|row| row[x].clone()).collect::<Vec<_>>())
     }
 
     /// Returns all diagonals of the given grid.
@@ -92,11 +92,11 @@ impl<T: Copy> Grid<T> {
             [
                 // Down to the right.
                 (0..self.height)
-                    .filter_map(|j| self.get((i + j).checked_sub(self.height)?, j).copied())
+                    .filter_map(|j| self.get((i + j).checked_sub(self.height)?, j).cloned())
                     .collect::<Vec<_>>(),
                 // Down to the left.
                 (0..self.height)
-                    .filter_map(|j| self.get((i).checked_sub(j + 1)?, j).copied())
+                    .filter_map(|j| self.get((i).checked_sub(j + 1)?, j).cloned())
                     .collect::<Vec<_>>(),
             ]
         })
@@ -105,7 +105,7 @@ impl<T: Copy> Grid<T> {
     /// Returns a copy of the grid flipped vertically.
     #[allow(unused)]
     pub fn flip_vertical(&self) -> Self {
-        let elements = self.rows().rev().flatten().copied().collect();
+        let elements = self.rows().rev().flatten().cloned().collect();
         Self {
             width: self.width,
             height: self.height,
@@ -118,7 +118,7 @@ impl<T: Copy> Grid<T> {
         let elements = self
             .rows()
             .flat_map(|row| row.iter().rev())
-            .copied()
+            .cloned()
             .collect();
         Self {
             width: self.width,
@@ -134,7 +134,7 @@ impl<T: Copy> Grid<T> {
                 (0..self.height)
                     .map(move |new_x| self.get(new_y, self.height() - new_x - 1).unwrap())
             })
-            .copied()
+            .cloned()
             .collect();
         Self {
             width: self.height,
