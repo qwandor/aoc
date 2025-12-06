@@ -82,7 +82,7 @@ impl<T> Grid<T> {
 
 impl<T: Clone> Grid<T> {
     /// Returns an iterator over columns of the grid.
-    pub fn columns(&self) -> impl Iterator<Item = Vec<T>> + '_ {
+    pub fn columns(&self) -> impl DoubleEndedIterator<Item = Vec<T>> + '_ {
         (0..self.width).map(|x| self.rows().map(|row| row[x].clone()).collect::<Vec<_>>())
     }
 

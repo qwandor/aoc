@@ -1,14 +1,24 @@
-use eyre::{Report, eyre};
+use eyre::{Report, bail, eyre};
 use std::{
-    io::{BufRead, stdin},
+    io::{BufRead, read_to_string, stdin},
     str::FromStr,
 };
-use utils::grid::Grid;
+use utils::{grid::Grid, parse_chargrid};
 
 fn main() -> Result<(), Report> {
-    let problems = parse(stdin().lock())?;
+    let input = read_to_string(stdin().lock())?;
 
-    println!("Sum of all solutions: {}", sum_solutions(&problems));
+    let problems1 = parse1(input.as_bytes())?;
+    println!(
+        "Sum of all solutions, part 1: {}",
+        sum_solutions(&problems1)
+    );
+
+    let problems2 = parse2(input.as_bytes())?;
+    println!(
+        "Sum of all solutions, part 2: {}",
+        sum_solutions(&problems2)
+    );
 
     Ok(())
 }
@@ -46,7 +56,7 @@ impl FromStr for Operation {
     }
 }
 
-fn parse(input: impl BufRead) -> Result<Vec<Problem>, Report> {
+fn parse1(input: impl BufRead) -> Result<Vec<Problem>, Report> {
     let grid_entries = input
         .lines()
         .map(|line| Ok(line?.split_whitespace().map(ToOwned::to_owned).collect()))
@@ -65,6 +75,38 @@ fn parse(input: impl BufRead) -> Result<Vec<Problem>, Report> {
         .collect()
 }
 
+fn parse2(input: impl BufRead) -> Result<Vec<Problem>, Report> {
+    let chargrid = parse_chargrid(input)?;
+    let mut problems = Vec::new();
+    let mut numbers = Vec::new();
+    for column in chargrid.columns().rev() {
+        if column.iter().all(|&c| c == ' ') {
+            numbers = Vec::new();
+        } else {
+            numbers.push(
+                column[0..column.len() - 1]
+                    .iter()
+                    .collect::<String>()
+                    .trim()
+                    .parse::<u64>()?,
+            );
+            match *column.last().unwrap() {
+                '+' => problems.push(Problem {
+                    operation: Operation::Addition,
+                    numbers: numbers.clone(),
+                }),
+                '*' => problems.push(Problem {
+                    operation: Operation::Multiplication,
+                    numbers: numbers.clone(),
+                }),
+                ' ' => {}
+                c => bail!("Unexpected operation {c}"),
+            }
+        }
+    }
+    Ok(problems)
+}
+
 fn sum_solutions(problems: &[Problem]) -> u64 {
     problems.iter().map(|problem| problem.solution()).sum()
 }
@@ -74,9 +116,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_example() {
+    fn parse_example_part_1() {
         assert_eq!(
-            parse(
+            parse1(
                 "\
 123 328  51 64 
  45 64  387 23 
@@ -108,7 +150,41 @@ mod tests {
     }
 
     #[test]
-    fn sum_example_problems() {
+    fn parse_example_part_2() {
+        assert_eq!(
+            parse2(
+                "\
+123 328  51 64 
+ 45 64  387 23 
+  6 98  215 314
+*   +   *   +  
+"
+                .as_bytes()
+            )
+            .unwrap(),
+            vec![
+                Problem {
+                    numbers: vec![4, 431, 623],
+                    operation: Operation::Addition,
+                },
+                Problem {
+                    numbers: vec![175, 581, 32],
+                    operation: Operation::Multiplication,
+                },
+                Problem {
+                    numbers: vec![8, 248, 369],
+                    operation: Operation::Addition,
+                },
+                Problem {
+                    numbers: vec![356, 24, 1],
+                    operation: Operation::Multiplication,
+                },
+            ]
+        )
+    }
+
+    #[test]
+    fn sum_example_part_1_problems() {
         assert_eq!(
             sum_solutions(&[
                 Problem {
@@ -129,6 +205,31 @@ mod tests {
                 },
             ]),
             4277556
+        );
+    }
+
+    #[test]
+    fn sum_example_part_2_problems() {
+        assert_eq!(
+            sum_solutions(&[
+                Problem {
+                    numbers: vec![4, 431, 623],
+                    operation: Operation::Addition,
+                },
+                Problem {
+                    numbers: vec![175, 581, 32],
+                    operation: Operation::Multiplication,
+                },
+                Problem {
+                    numbers: vec![8, 248, 369],
+                    operation: Operation::Addition,
+                },
+                Problem {
+                    numbers: vec![356, 24, 1],
+                    operation: Operation::Multiplication,
+                },
+            ]),
+            3263827
         );
     }
 }
