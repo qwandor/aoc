@@ -11,6 +11,10 @@ fn main() -> Result<(), Report> {
         "Three largest sizes multiplied after 1000 connections: {}",
         connect_count_multiply(&positions, 1000)
     );
+    println!(
+        "Product of X co-ordinates of last junction boxes to connect: {}",
+        part2(&positions)
+    );
 
     Ok(())
 }
@@ -32,20 +36,7 @@ fn parse(input: impl BufRead) -> Result<Vec<[i64; 3]>, Report> {
 /// Make the `connection_count` shortest connections, then count how many junction boxes are in the
 /// three biggest circuits and multiply them.
 fn connect_count_multiply(positions: &[[i64; 3]], connection_count: usize) -> u32 {
-    // Find the closest `connection_count` pairs of junction boxes.
-    let mut distances = Vec::new();
-    for (i, a) in positions.iter().enumerate() {
-        for (j, b) in positions[0..i].iter().enumerate() {
-            if i != j {
-                distances.push((i, j, distance_squared(a, b)));
-            }
-        }
-    }
-    distances.sort_by_key(|&(_, _, distance)| distance);
-    println!(
-        "Closest {connection_count}: {:?}",
-        &distances[0..connection_count]
-    );
+    let distances = find_distances(positions);
 
     // Connect them, and count the sizes of the resulting subgraphs.
     let mut subgraphs = (0..positions.len()).collect::<Vec<_>>();
@@ -68,6 +59,42 @@ fn connect_count_multiply(positions: &[[i64; 3]], connection_count: usize) -> u3
     counts_values.reverse();
 
     counts_values[0..3].iter().product()
+}
+
+fn part2(positions: &[[i64; 3]]) -> i64 {
+    let distances = find_distances(positions);
+
+    let mut subgraphs = (0..positions.len()).collect::<Vec<_>>();
+    for &(i, j, _) in &distances {
+        let old = subgraphs[i];
+        let new = subgraphs[j];
+        for entry in &mut subgraphs {
+            if *entry == old {
+                *entry = new;
+            }
+        }
+        if subgraphs.iter().all(|&subgraph| subgraph == subgraphs[0]) {
+            // The junction boxes are now all connected.
+            return positions[i][0] * positions[j][0];
+        }
+    }
+
+    unreachable!();
+}
+
+/// Returns the distances between each pair of positions, sorted from shortest to longest distance.
+fn find_distances(positions: &[[i64; 3]]) -> Vec<(usize, usize, i64)> {
+    // Find the closest `connection_count` pairs of junction boxes.
+    let mut distances = Vec::new();
+    for (i, a) in positions.iter().enumerate() {
+        for (j, b) in positions[0..i].iter().enumerate() {
+            if i != j {
+                distances.push((i, j, distance_squared(a, b)));
+            }
+        }
+    }
+    distances.sort_by_key(|&(_, _, distance)| distance);
+    distances
 }
 
 fn distance_squared(a: &[i64; 3], b: &[i64; 3]) -> i64 {
@@ -164,6 +191,35 @@ mod tests {
                 10
             ),
             40
+        );
+    }
+
+    #[test]
+    fn example_part2() {
+        assert_eq!(
+            part2(&[
+                [162, 817, 812],
+                [57, 618, 57],
+                [906, 360, 560],
+                [592, 479, 940],
+                [352, 342, 300],
+                [466, 668, 158],
+                [542, 29, 236],
+                [431, 825, 988],
+                [739, 650, 466],
+                [52, 470, 668],
+                [216, 146, 977],
+                [819, 987, 18],
+                [117, 168, 530],
+                [805, 96, 715],
+                [346, 949, 466],
+                [970, 615, 88],
+                [941, 993, 340],
+                [862, 61, 35],
+                [984, 92, 344],
+                [425, 690, 689],
+            ]),
+            25272
         );
     }
 }
