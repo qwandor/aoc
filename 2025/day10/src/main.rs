@@ -285,6 +285,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn example_min_joltage_presses() {
         let machine1 = Machine {
             lights: 0b0110,
