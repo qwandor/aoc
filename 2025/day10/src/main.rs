@@ -3,12 +3,20 @@ use std::{
     cmp::min,
     io::{BufRead, stdin},
     str::FromStr,
+    u32,
 };
 
 fn main() -> Result<(), Report> {
     let machines = parse(stdin().lock())?;
 
-    println!("Minimum button presses: {}", find_min_presses(&machines));
+    println!(
+        "Minimum button presses for lights: {}",
+        find_min_presses(&machines, Machine::min_light_presses)
+    );
+    println!(
+        "Minimum button presses for joltage: {}",
+        find_min_presses(&machines, Machine::min_joltage_presses)
+    );
 
     Ok(())
 }
@@ -23,8 +31,8 @@ fn parse(input: impl BufRead) -> Result<Vec<Machine>, Report> {
         .collect()
 }
 
-fn find_min_presses(machines: &[Machine]) -> u32 {
-    machines.iter().map(Machine::min_presses).sum()
+fn find_min_presses(machines: &[Machine], min_presses: fn(&Machine) -> u32) -> u32 {
+    machines.iter().map(min_presses).sum()
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -37,7 +45,7 @@ struct Machine {
 }
 
 impl Machine {
-    fn min_presses(&self) -> u32 {
+    fn min_light_presses(&self) -> u32 {
         let mut min_presses = u32::MAX;
         // Try pressing all possible combinations of buttons.
         for combination in 0u64..(1 << self.buttons.len()) {
@@ -52,6 +60,46 @@ impl Machine {
             }
         }
         min_presses
+    }
+
+    fn min_joltage_presses(&self) -> u32 {
+        for presses in 0..=self
+            .joltages
+            .iter()
+            .copied()
+            .sum::<u64>()
+            .try_into()
+            .unwrap()
+        {
+            println!("Trying {presses} presses");
+            if self.can_make_joltage_with_presses(presses, &vec![0; self.joltages.len()]) {
+                return presses;
+            }
+        }
+        u32::MAX
+    }
+
+    // Returns whether it is possible to make the desired joltages with no more than the given
+    // number of button presses, starting from the given joltages.
+    fn can_make_joltage_with_presses(&self, max_presses: u32, counters: &[u64]) -> bool {
+        if counters == self.joltages {
+            true
+        } else if max_presses == 0 {
+            false
+        } else {
+            for button in &self.buttons {
+                let mut new_counters = counters.to_owned();
+                for bit in 0..size_of::<u64>() {
+                    if button & (1 << bit) != 0 {
+                        new_counters[bit] += 1;
+                    }
+                }
+                if self.can_make_joltage_with_presses(max_presses - 1, &new_counters) {
+                    return true;
+                }
+            }
+            false
+        }
     }
 }
 
@@ -102,6 +150,7 @@ impl FromStr for Machine {
         })
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -139,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn example_min_presses() {
+    fn example_min_light_presses() {
         let machine1 = Machine {
             lights: 0b0110,
             buttons: vec![0b1000, 0b1010, 0b0100, 0b1100, 0b0101, 0b0011],
@@ -155,9 +204,108 @@ mod tests {
             buttons: vec![0b011111, 0b011001, 0b110111, 0b000110],
             joltages: vec![10, 11, 11, 5, 10, 5],
         };
-        assert_eq!(machine1.min_presses(), 2);
-        assert_eq!(machine2.min_presses(), 3);
-        assert_eq!(machine3.min_presses(), 2);
-        assert_eq!(find_min_presses(&[machine1, machine2, machine3]), 7);
+        assert_eq!(machine1.min_light_presses(), 2);
+        assert_eq!(machine2.min_light_presses(), 3);
+        assert_eq!(machine3.min_light_presses(), 2);
+        assert_eq!(
+            find_min_presses(&[machine1, machine2, machine3], Machine::min_light_presses),
+            7
+        );
+    }
+
+    #[test]
+    fn simple_min_joltage_presses() {
+        assert_eq!(
+            Machine {
+                lights: 0,
+                buttons: vec![0b01, 0b10, 0b11],
+                joltages: vec![0, 0],
+            }
+            .min_joltage_presses(),
+            0
+        );
+        assert_eq!(
+            Machine {
+                lights: 0,
+                buttons: vec![0b01, 0b10, 0b11],
+                joltages: vec![0, 1],
+            }
+            .min_joltage_presses(),
+            1
+        );
+        assert_eq!(
+            Machine {
+                lights: 0,
+                buttons: vec![0b01, 0b10, 0b11],
+                joltages: vec![1, 0],
+            }
+            .min_joltage_presses(),
+            1
+        );
+        assert_eq!(
+            Machine {
+                lights: 0,
+                buttons: vec![0b01, 0b10, 0b11],
+                joltages: vec![1, 1],
+            }
+            .min_joltage_presses(),
+            1
+        );
+        assert_eq!(
+            Machine {
+                lights: 0,
+                buttons: vec![0b01],
+                joltages: vec![1, 0],
+            }
+            .min_joltage_presses(),
+            1
+        );
+        assert_eq!(
+            Machine {
+                lights: 0,
+                buttons: vec![0b01],
+                joltages: vec![2, 0],
+            }
+            .min_joltage_presses(),
+            2
+        );
+        assert_eq!(
+            Machine {
+                lights: 0,
+                buttons: vec![0b01, 0b10],
+                joltages: vec![1, 1],
+            }
+            .min_joltage_presses(),
+            2
+        );
+    }
+
+    #[test]
+    fn example_min_joltage_presses() {
+        let machine1 = Machine {
+            lights: 0b0110,
+            buttons: vec![0b1000, 0b1010, 0b0100, 0b1100, 0b0101, 0b0011],
+            joltages: vec![3, 5, 4, 7],
+        };
+        let machine2 = Machine {
+            lights: 0b01000,
+            buttons: vec![0b11101, 0b01100, 0b10001, 0b00111, 0b11110],
+            joltages: vec![7, 5, 12, 7, 2],
+        };
+        let machine3 = Machine {
+            lights: 0b101110,
+            buttons: vec![0b011111, 0b011001, 0b110111, 0b000110],
+            joltages: vec![10, 11, 11, 5, 10, 5],
+        };
+        assert_eq!(machine1.min_joltage_presses(), 10);
+        assert_eq!(machine2.min_joltage_presses(), 12);
+        assert_eq!(machine3.min_joltage_presses(), 11);
+        assert_eq!(
+            find_min_presses(
+                &[machine1, machine2, machine3],
+                Machine::min_joltage_presses
+            ),
+            33
+        );
     }
 }
