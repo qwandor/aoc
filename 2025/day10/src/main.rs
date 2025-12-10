@@ -72,7 +72,7 @@ impl Machine {
             .unwrap()
         {
             println!("Trying {presses} presses");
-            if self.can_make_joltage_with_presses(presses, &vec![0; self.joltages.len()]) {
+            if self.can_make_joltage_with_presses(presses, &mut vec![0; self.joltages.len()]) {
                 return presses;
             }
         }
@@ -81,21 +81,25 @@ impl Machine {
 
     // Returns whether it is possible to make the desired joltages with no more than the given
     // number of button presses, starting from the given joltages.
-    fn can_make_joltage_with_presses(&self, max_presses: u32, counters: &[u64]) -> bool {
+    fn can_make_joltage_with_presses(&self, max_presses: u32, counters: &mut [u64]) -> bool {
         if counters == self.joltages {
             true
         } else if max_presses == 0 {
             false
         } else {
             for button in &self.buttons {
-                let mut new_counters = counters.to_owned();
                 for bit in 0..size_of::<u64>() {
                     if button & (1 << bit) != 0 {
-                        new_counters[bit] += 1;
+                        counters[bit] += 1;
                     }
                 }
-                if self.can_make_joltage_with_presses(max_presses - 1, &new_counters) {
+                if self.can_make_joltage_with_presses(max_presses - 1, counters) {
                     return true;
+                }
+                for bit in 0..size_of::<u64>() {
+                    if button & (1 << bit) != 0 {
+                        counters[bit] -= 1;
+                    }
                 }
             }
             false
