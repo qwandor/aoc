@@ -9,7 +9,11 @@ fn main() -> Result<(), Report> {
 
     println!(
         "Paths from you to out: {}",
-        count_paths(&connections, "you", "out")
+        count_paths(&connections, "you", "out", &[], &[])
+    );
+    println!(
+        "Paths from svr to out, visiting dac and fft: {}",
+        count_paths(&connections, "svr", "out", &["dac", "fft"], &[])
     );
 
     Ok(())
@@ -29,15 +33,38 @@ fn parse(input: impl BufRead) -> Result<BTreeMap<String, Vec<String>>, Report> {
         .collect()
 }
 
-fn count_paths(connections: &BTreeMap<String, Vec<String>>, from: &str, to: &str) -> usize {
+fn count_paths(
+    connections: &BTreeMap<String, Vec<String>>,
+    from: &str,
+    to: &str,
+    must_visit: &[&str],
+    visited: &[&str],
+) -> usize {
+    if visited.contains(&from) {
+        println!("Loop: {visited:?}");
+        return 0;
+    }
+    let visited = visited
+        .iter()
+        .map(Clone::clone)
+        .chain(Some(from))
+        .collect::<Vec<_>>();
+
     if from == to {
-        1
+        if must_visit
+            .iter()
+            .all(|must_visit_device| visited.contains(must_visit_device))
+        {
+            1
+        } else {
+            0
+        }
     } else {
         connections
             .get(from)
             .unwrap_or(&Vec::new())
             .iter()
-            .map(|output| count_paths(connections, output, to))
+            .map(|output| count_paths(connections, output, to, must_visit, &visited))
             .sum()
     }
 }
@@ -98,7 +125,7 @@ iii: out
     }
 
     #[test]
-    fn count_example_paths() {
+    fn count_example_paths_you_to_out() {
         assert_eq!(
             count_paths(
                 &[
@@ -131,9 +158,43 @@ iii: out
                 .into_iter()
                 .collect(),
                 "you",
-                "out"
+                "out",
+                &[],
+                &[],
             ),
             5
+        );
+    }
+
+    #[test]
+    fn count_example_paths_svr_to_out() {
+        assert_eq!(
+            count_paths(
+                &parse(
+                    "\
+svr: aaa bbb
+aaa: fft
+fft: ccc
+bbb: tty
+tty: ccc
+ccc: ddd eee
+ddd: hub
+hub: fff
+eee: dac
+dac: fff
+fff: ggg hhh
+ggg: out
+hhh: out
+"
+                    .as_bytes()
+                )
+                .unwrap(),
+                "svr",
+                "out",
+                &["dac", "fft"],
+                &[],
+            ),
+            2
         );
     }
 }
