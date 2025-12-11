@@ -9,11 +9,11 @@ fn main() -> Result<(), Report> {
 
     println!(
         "Paths from you to out: {}",
-        count_paths(&connections, "you", "out", &[], &[])
+        count_paths(&connections, "you", &["out"])
     );
     println!(
         "Paths from svr to out, visiting dac and fft: {}",
-        count_paths(&connections, "svr", "out", &["dac", "fft"], &[])
+        count_paths(&connections, "svr", &["dac", "fft", "out"])
     );
 
     Ok(())
@@ -36,36 +36,61 @@ fn parse(input: impl BufRead) -> Result<BTreeMap<String, Vec<String>>, Report> {
 fn count_paths(
     connections: &BTreeMap<String, Vec<String>>,
     from: &str,
-    to: &str,
     must_visit: &[&str],
-    visited: &[&str],
 ) -> usize {
-    if visited.contains(&from) {
-        println!("Loop: {visited:?}");
-        return 0;
-    }
-    let visited = visited
-        .iter()
-        .map(Clone::clone)
-        .chain(Some(from))
-        .collect::<Vec<_>>();
+    memoise(
+        connections,
+        (
+            from.to_string(),
+            must_visit.iter().map(|s| s.to_string()).collect(),
+        ),
+        count_paths_memoised,
+        &mut BTreeMap::new(),
+    )
+}
 
-    if from == to {
-        if must_visit
-            .iter()
-            .all(|must_visit_device| visited.contains(must_visit_device))
-        {
-            1
+fn memoise<T: Copy, I: Clone + Ord, O: Copy>(
+    data: T,
+    input: I,
+    f: fn(T, I, &mut BTreeMap<I, O>) -> O,
+    memo: &mut BTreeMap<I, O>,
+) -> O {
+    if let Some(&answer) = memo.get(&input) {
+        answer
+    } else {
+        let answer = f(data, input.clone(), memo);
+        memo.insert(input, answer);
+        answer
+    }
+}
+
+fn count_paths_memoised(
+    connections: &BTreeMap<String, Vec<String>>,
+    (from, must_visit): (String, Vec<String>),
+    memo: &mut BTreeMap<(String, Vec<String>), usize>,
+) -> usize {
+    let must_visit = must_visit
+        .iter()
+        .filter(|&device| device != &from)
+        .cloned()
+        .collect::<Vec<_>>();
+    if must_visit.is_empty() {
+        1
+    } else {
+        if let Some(outs) = connections.get(&from) {
+            outs.iter()
+                .map(|output| {
+                    memoise(
+                        connections,
+                        (output.clone(), must_visit.clone()),
+                        count_paths_memoised,
+                        memo,
+                    )
+                })
+                .sum()
         } else {
             0
         }
-    } else {
-        connections
-            .get(from)
-            .unwrap_or(&Vec::new())
-            .iter()
-            .map(|output| count_paths(connections, output, to, must_visit, &visited))
-            .sum()
     }
 }
 
@@ -158,9 +183,7 @@ iii: out
                 .into_iter()
                 .collect(),
                 "you",
-                "out",
-                &[],
-                &[],
+                &["out"],
             ),
             5
         );
@@ -190,9 +213,7 @@ hhh: out
                 )
                 .unwrap(),
                 "svr",
-                "out",
-                &["dac", "fft"],
-                &[],
+                &["dac", "fft", "out"],
             ),
             2
         );
