@@ -84,7 +84,12 @@ impl Machine {
     fn can_make_joltage_with_presses(&self, max_presses: u32, counters: &mut [u64]) -> bool {
         if counters == self.joltages {
             true
-        } else if max_presses == 0 {
+        } else if max_presses == 0
+            || counters
+                .iter()
+                .enumerate()
+                .any(|(i, &counter)| counter > self.joltages[i])
+        {
             false
         } else {
             for button in &self.buttons {
@@ -285,7 +290,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn example_min_joltage_presses() {
         let machine1 = Machine {
             lights: 0b0110,
