@@ -40,10 +40,7 @@ fn count_paths(
 ) -> usize {
     memoise(
         connections,
-        (
-            from.to_string(),
-            must_visit.iter().map(|s| s.to_string()).collect(),
-        ),
+        (from, must_visit.to_vec()),
         count_paths_memoised,
         &mut BTreeMap::new(),
     )
@@ -64,25 +61,25 @@ fn memoise<T: Copy, I: Clone + Ord, O: Copy>(
     }
 }
 
-fn count_paths_memoised(
-    connections: &BTreeMap<String, Vec<String>>,
-    (from, must_visit): (String, Vec<String>),
-    memo: &mut BTreeMap<(String, Vec<String>), usize>,
+fn count_paths_memoised<'a>(
+    connections: &'a BTreeMap<String, Vec<String>>,
+    (from, must_visit): (&'a str, Vec<&'a str>),
+    memo: &mut BTreeMap<(&'a str, Vec<&'a str>), usize>,
 ) -> usize {
     let must_visit = must_visit
         .iter()
-        .filter(|&device| device != &from)
+        .filter(|&&device| device != from)
         .cloned()
         .collect::<Vec<_>>();
     if must_visit.is_empty() {
         1
     } else {
-        if let Some(outs) = connections.get(&from) {
+        if let Some(outs) = connections.get(from) {
             outs.iter()
                 .map(|output| {
                     memoise(
                         connections,
-                        (output.clone(), must_visit.clone()),
+                        (output.as_str(), must_visit.clone()),
                         count_paths_memoised,
                         memo,
                     )
